@@ -111,6 +111,12 @@ button { cursor: pointer }
 .bt .l b { color: var(--frame-ink) }
 .bt .sep { grid-column: 1 / -1; height: 2px; background: var(--fl) }
 .bt .gap { justify-self: end; background: #ffffff; border-radius: 8px; padding: 3px 9px; font-weight: 800 !important; font-size: 16px }
+.curtag { font-style: normal; display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11.5px; letter-spacing: .04em; text-transform: none; font-weight: 700; box-shadow: 2px 2px 0 color-mix(in srgb, var(--frame-ink) 35%, transparent) }
+.curtag.pen { background: var(--hero); color: var(--hero-ink) }
+.curtag.usd { background: var(--k-reserva); color: var(--k-reserva-on) }
+.savedin .label { text-transform: none; letter-spacing: 0; font-size: 12.5px }
+.savedin input#savedPEN { box-shadow: inset 0 0 0 2px var(--hero) }
+.savedin input#savedUSD { box-shadow: inset 0 0 0 2px var(--k-reserva) }
 .gap.bad { color: var(--bad) } .gap.good { color: var(--ok) }
 .savedin { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px }
 .savedin .label { color: var(--fm) }
@@ -380,7 +386,7 @@ html { color-scheme: light } body { margin: 0 }
   <section class="card budget">
     <h2>Presupuesto</h2>
     <div class="bt num">
-      <span></span><span class="h">Soles</span><span class="h">Dólares</span>
+      <span></span><span class="h"><i class="curtag pen">🇵🇪 Soles</i></span><span class="h"><i class="curtag usd">🇺🇸 Dólares</i></span>
       <span class="l">Necesitas (pendiente)</span><span id="needPEN">–</span><span id="needUSD">–</span>
       <span class="l">Ya pagado</span><span id="paidPEN">–</span><span id="paidUSD">–</span>
       <span class="l">Tienes ahorrado</span><span id="savedTotPEN">–</span><span id="savedTotUSD">–</span>
@@ -388,8 +394,8 @@ html { color-scheme: light } body { margin: 0 }
       <span class="l"><b id="gapLabel">Te falta</b></span><span id="gapPEN" class="gap">–</span><span id="gapUSD" class="gap">–</span>
     </div>
     <div class="savedin">
-      <label class="field"><span class="label">Ahorrado en soles</span><input id="savedPEN" class="num" inputmode="decimal" placeholder="S/ 0"></label>
-      <label class="field"><span class="label">Ahorrado en dólares</span><input id="savedUSD" class="num" inputmode="decimal" placeholder="US$ 0"></label>
+      <label class="field"><span class="label">Ahorrado en <i class="curtag pen">🇵🇪 soles</i></span><input id="savedPEN" class="num" inputmode="decimal" placeholder="S/ 0"></label>
+      <label class="field"><span class="label">Ahorrado en <i class="curtag usd">🇺🇸 dólares</i></span><input id="savedUSD" class="num" inputmode="decimal" placeholder="US$ 0"></label>
     </div>
     <div class="ratebox">
       <span>Tipo de cambio: <b id="rateShow" class="num">S/ 3.75</b> por US$1 · <span id="rateSrc"></span></span>
