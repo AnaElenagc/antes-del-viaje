@@ -129,6 +129,17 @@ button { cursor: pointer }
 .cbar-bar { height: 10px; border-radius: 0 4px 4px 0; background: var(--c); min-width: 3px }
 .chart-empty { color: var(--muted); font-size: 13.5px; padding: 10px 0 }
 
+/* Category tints */
+.task[class*="c-"] { background: color-mix(in srgb, var(--c) 9%, #ffffff); border-color: color-mix(in srgb, var(--c) 28%, #ffffff); border-left-color: var(--c) }
+.task[class*="c-"] .check { background: #ffffff; border-color: color-mix(in srgb, var(--c) 70%, var(--ink)) }
+.task.done .check { background: var(--ok); border-color: var(--ok) }
+.task[class*="c-"]:hover { background: color-mix(in srgb, var(--c) 14%, #ffffff) }
+.chip[class*="c-"] { background: color-mix(in srgb, var(--c) 10%, #ffffff); border-color: color-mix(in srgb, var(--c) 30%, #ffffff) }
+.chip[class*="c-"][aria-pressed="true"] { background: var(--c); border-color: var(--c); color: #ffffff }
+.chip[class*="c-"][aria-pressed="true"]::before { background: #ffffff }
+.chip:not([class*="c-"]) { background: var(--tint) }
+.chip:not([class*="c-"])[aria-pressed="true"] { background: var(--ink) }
+
 /* Alerts */
 .alerts { display: grid; gap: 8px }
 .alert { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; font-size: 14px; border: 0; text-align: left; width: 100% }
