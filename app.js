@@ -829,7 +829,7 @@ async function choosePalette(id) {
 function icsEscape(s) { return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n'); }
 function buildIcs() {
   const now = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Antes del Viaje//ES', 'CALSCALE:GREGORIAN'];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Antes de//ES', 'CALSCALE:GREGORIAN'];
   const ev = (uid, day, summary, desc) => {
     lines.push('BEGIN:VEVENT', 'UID:' + uid + '@antes-del-viaje', 'DTSTAMP:' + now,
       'DTSTART;VALUE=DATE:' + day.replace(/-/g, ''), 'DTEND;VALUE=DATE:' + addDays(day, 1).replace(/-/g, ''),
@@ -851,7 +851,7 @@ $('icsBtn').onclick = () => {
   if (!tasks.length) { toast('Primero agrega tareas con fecha.'); return; }
   const { text, n } = buildIcs();
   const url = URL.createObjectURL(new Blob([text], { type: 'text/calendar' }));
-  const a = document.createElement('a'); a.href = url; a.download = 'antes-del-viaje.ics'; document.body.append(a); a.click(); a.remove();
+  const a = document.createElement('a'); a.href = url; a.download = 'antes-de.ics'; document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
   toast(n + ' recordatorios listos. Ábrelo para añadirlos a tu calendario.');
 };
@@ -928,6 +928,15 @@ function openPassword() {
 }
 $('pwdBtn').onclick = openPassword;
 $('pwdBannerBtn').onclick = openPassword;
+
+// login screen: rotate examples of what the app is for
+const ROT = ['tu viaje ✈️', 'tu mudanza 🏠', 'tu evento 🎉', 'tus compras 🛍️', 'tu boda 💍', 'tu cumple 🎂'];
+let rotI = 0;
+setInterval(() => {
+  const el = $('rot'); if (!el || $('login').hidden) return;
+  el.classList.add('out');
+  setTimeout(() => { rotI = (rotI + 1) % ROT.length; setWithEmoji(el, ROT[rotI]); el.classList.remove('out'); }, 250);
+}, 2200);
 
 function showApp(signedIn) {
   $('login').hidden = signedIn; $('app').hidden = !signedIn;

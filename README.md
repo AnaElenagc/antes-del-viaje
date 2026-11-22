@@ -1,6 +1,6 @@
-# Antes del Viaje
+# Antes de
 
-App para organizar los pendientes antes de un viaje (o cualquier actividad):
+App para organizar lo que tienes que hacer antes de un viaje, una mudanza, un evento o unas compras:
 tareas por tipo, fecha ideal y fecha límite, presupuesto en soles y dólares,
 y recordatorios para Google Calendar o el calendario del iPhone (.ics).
 

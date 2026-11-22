@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#2348b8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Antes del Viaje">
+<meta name="apple-mobile-web-app-title" content="Antes de">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<title>Antes del Viaje</title>
+<title>Antes de</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap">
 <style>
@@ -334,6 +334,10 @@ html { color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 10
 [hidden] { display: none !important }
 .login { max-width: 420px; margin: 8vh auto 0; display: grid; gap: 16px }
 .login .hero { grid-template-columns: 1fr }
+.login .hero h1 { line-height: 1.15 }
+.rot { display: block; white-space: nowrap; font-size: .8em; color: var(--hero-ink); transition: opacity .25s, transform .25s }
+.rot.out { opacity: 0; transform: translateY(6px) }
+@media (prefers-reduced-motion: reduce) { .rot { transition: none } }
 .login form { display: grid; gap: 12px }
 .login p { margin: 0; color: var(--muted) }
 .login .ok { color: var(--ok); font-weight: 600 }
@@ -348,7 +352,7 @@ html { color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 10
 
 
 <div class="login" id="login" hidden>
-  <section class="hero"><h1>Antes del Viaje</h1><div class="sub">Tus pendientes, fechas límite y presupuesto, en el celular y la laptop.</div></section>
+  <section class="hero"><h1>Antes de <span class="rot" id="rot">tu viaje ✈️</span></h1><div class="sub">Organiza todo lo que tienes que hacer antes de un viaje, una mudanza, un evento o tus compras: fechas límite, listas y presupuesto, en el celular y la laptop.</div></section>
   <form class="card" id="loginForm">
     <label class="field"><span class="label">Tu correo</span><input id="email" name="email" type="email" autocomplete="username" required placeholder="tucorreo@gmail.com"></label>
     <label class="field"><span class="label">Contraseña</span><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña"></label>
@@ -385,8 +389,8 @@ html { color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 10
   <div class="alerts" id="alerts"></div>
 
   <div class="tabs" role="tablist" aria-label="Etapa">
-    <button type="button" role="tab" id="tabAntes" aria-selected="true">Antes del viaje</button>
-    <button type="button" role="tab" id="tabDurante" aria-selected="false">Durante el viaje</button>
+    <button type="button" role="tab" id="tabAntes" aria-selected="true">Antes</button>
+    <button type="button" role="tab" id="tabDurante" aria-selected="false">Durante</button>
   </div>
   <div class="actionsbar">
     <button class="btn primary" id="addBtn2" type="button" hidden>+ Agregar tarea</button>
