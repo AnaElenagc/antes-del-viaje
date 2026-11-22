@@ -24,7 +24,12 @@
   --line: #ece2dc;
   --accent: #e0442a;        /* tomato */
   --accent-soft: #fde0d8;
-  --cobalt: #2348b8; --tomato: #e0442a; --emerald: #18864a; --mustard: #c98a00; --pink: #e9609a; --violet: #7b4bc4; --sun: #f4ef4a; --badge: #f2b129;
+  /* Palette slots: app.js overwrites these with the chosen palette (defaults = Ecléctico) */
+  --k-tramite: #2348b8; --k-compra: #e0442a; --k-reserva: #18864a; --k-llamada: #e9609a; --k-dinero: #c98a00; --k-otro: #7b4bc4;
+  --k-tramite-ink: #2348b8; --k-compra-ink: #c2341c; --k-reserva-ink: #18864a; --k-llamada-ink: #c23a77; --k-dinero-ink: #9a6400; --k-otro-ink: #7b4bc4;
+  --k-tramite-on: #fff; --k-compra-on: #fff; --k-reserva-on: #fff; --k-llamada-on: #fff; --k-dinero-on: #fff; --k-otro-on: #fff;
+  --hero: #2348b8; --hero-ink: #fff8ef; --hero-title: #f4ef4a; --hero-shadow: #e0442a; --deco1: #e0442a; --deco2: #18864a; --deco3: #e9609a; --deco4: #f2b129;
+  --badge: #f2b129; --badge-ink: #1c2142; --accent-ink: #ffffff; --accent-text: #c2341c; --head: #2348b8; --frame: #f2b129; --frame-shadow: #18864a;
   --tomato-ink: #c2341c; --pink-ink: #c23a77; --mustard-ink: #9a6400;
   --on-poster: #fff8ef;
   --ok: #1d7a4f; --ok-soft: #dff2e6;
@@ -36,12 +41,12 @@
   --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: light;
 }
-.c-tramite { --c: var(--cobalt); --ci: var(--cobalt) }
-.c-compra { --c: var(--tomato); --ci: var(--tomato-ink) }
-.c-reserva { --c: var(--emerald); --ci: var(--emerald) }
-.c-llamada { --c: var(--pink); --ci: var(--pink-ink) }
-.c-dinero { --c: var(--mustard); --ci: var(--mustard-ink) }
-.c-otro { --c: var(--violet); --ci: var(--violet) }
+.c-tramite { --c: var(--k-tramite); --ci: var(--k-tramite-ink); --on-c: var(--k-tramite-on) }
+.c-compra { --c: var(--k-compra); --ci: var(--k-compra-ink); --on-c: var(--k-compra-on) }
+.c-reserva { --c: var(--k-reserva); --ci: var(--k-reserva-ink); --on-c: var(--k-reserva-on) }
+.c-llamada { --c: var(--k-llamada); --ci: var(--k-llamada-ink); --on-c: var(--k-llamada-on) }
+.c-dinero { --c: var(--k-dinero); --ci: var(--k-dinero-ink); --on-c: var(--k-dinero-on) }
+.c-otro { --c: var(--k-otro); --ci: var(--k-otro-ink); --on-c: var(--k-otro-on) }
 
 * { box-sizing: border-box }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45;
@@ -72,30 +77,30 @@ button { cursor: pointer }
 .top { display: flex; gap: 8px; align-items: center }
 .top select { flex: 1; min-width: 0; background: transparent; border: 0; font-weight: 600; color: var(--muted); padding: 4px 0 }
 .iconbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 10px; font-size: 13px }
-.hero { position: relative; overflow: hidden; isolation: isolate; border-radius: 22px; padding: 22px 18px; background: var(--cobalt); color: var(--on-poster);
+.hero { position: relative; overflow: hidden; isolation: isolate; border-radius: 22px; padding: 22px 18px; background: var(--hero); color: var(--hero-ink);
   display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: center }
 .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .9;
   background:
-    radial-gradient(circle at 100% 0%, var(--tomato) 0 46px, transparent 47px),
-    radial-gradient(circle at 0% 100%, var(--emerald) 0 38px, transparent 39px),
-    radial-gradient(circle at 72% 112%, var(--pink) 0 30px, transparent 31px),
-    radial-gradient(circle at 8% 10%, var(--mustard) 0 7px, transparent 8px),
-    radial-gradient(circle at 16% 22%, var(--sun) 0 4px, transparent 5px) }
-.hero h1 { font-family: var(--fun); font-weight: 400; color: var(--sun); font-size: clamp(30px, 8vw, 44px); line-height: 1.1; text-shadow: 3px 3px 0 var(--tomato); overflow-wrap: anywhere; min-width: 0 }
+    radial-gradient(circle at 100% 0%, var(--deco1) 0 46px, transparent 47px),
+    radial-gradient(circle at 0% 100%, var(--deco2) 0 38px, transparent 39px),
+    radial-gradient(circle at 72% 112%, var(--deco3) 0 30px, transparent 31px),
+    radial-gradient(circle at 8% 10%, var(--deco4) 0 7px, transparent 8px),
+    radial-gradient(circle at 16% 22%, var(--hero-title) 0 4px, transparent 5px) }
+.hero h1 { font-family: var(--fun); font-weight: 400; color: var(--hero-title); font-size: clamp(30px, 8vw, 44px); line-height: 1.1; text-shadow: 3px 3px 0 var(--hero-shadow); overflow-wrap: anywhere; min-width: 0 }
 .hero .sub { grid-column: 1; font-weight: 500; opacity: .92 }
-.count { grid-row: 1 / span 2; grid-column: 2; width: 96px; height: 96px; border-radius: 50%; background: var(--badge); color: #1c2142;
-  display: grid; place-content: center; text-align: center; transform: rotate(-8deg); box-shadow: 4px 4px 0 var(--tomato) }
+.count { grid-row: 1 / span 2; grid-column: 2; width: 96px; height: 96px; border-radius: 50%; background: var(--badge); color: var(--badge-ink);
+  display: grid; place-content: center; text-align: center; transform: rotate(-8deg); box-shadow: 4px 4px 0 var(--hero-shadow) }
 .count b { display: block; font-family: var(--display); font-size: 40px; line-height: .9; font-weight: 800 }
 .count span { font-size: 11px; font-weight: 600; max-width: 80px }
 .progress { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden }
 .progress i { display: block; height: 100%; width: 0; transition: width .3s;
-  background: linear-gradient(90deg, var(--cobalt) 0 25%, var(--tomato) 25% 50%, var(--mustard) 50% 75%, var(--emerald) 75%) }
+  background: linear-gradient(90deg, var(--k-tramite) 0 25%, var(--k-compra) 25% 50%, var(--k-dinero) 50% 75%, var(--k-reserva) 75%) }
 .progtxt { font-size: 13px; color: var(--muted); margin-top: 6px }
 
 /* Budget */
 .card { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--line); padding: 16px }
-.budget { border: 3px solid var(--badge); box-shadow: 6px 6px 0 var(--emerald); margin-right: 6px }
-.budget h2 { font-family: var(--fun); font-weight: 400; font-size: 22px; margin-bottom: 12px; color: var(--cobalt) }
+.budget { border: 3px solid var(--frame); box-shadow: 6px 6px 0 var(--frame-shadow); margin-right: 6px }
+.budget h2 { font-family: var(--fun); font-weight: 400; font-size: 22px; margin-bottom: 12px; color: var(--head) }
 .btable { display: grid; grid-template-columns: 1fr auto auto; gap: 8px 16px; align-items: center }
 .btable .h { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); text-align: right; font-weight: 600 }
 .btable .r { text-align: right }
@@ -110,7 +115,7 @@ button { cursor: pointer }
 
 
 /* Charts */
-.charts h2 { font-family: var(--fun); font-weight: 400; font-size: 20px; color: var(--cobalt); margin-bottom: 4px }
+.charts h2 { font-family: var(--fun); font-weight: 400; font-size: 20px; color: var(--head); margin-bottom: 4px }
 .charts h3 { font-family: var(--display); font-size: 15px; margin: 18px 0 8px }
 .charts .hint { color: var(--muted); font-size: 13px; margin: 0 0 12px }
 .goal { display: grid; gap: 6px; margin-bottom: 14px }
@@ -119,8 +124,8 @@ button { cursor: pointer }
 .goal-top span { color: var(--muted) }
 .track { height: 14px; background: var(--tint); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; position: relative }
 .track i { position: absolute; inset: 0 auto 0 0; border-radius: 0 4px 4px 0; transition: width .4s }
-.track.save i { background: var(--emerald) }
-.track.total i { background: var(--cobalt) }
+.track.save i { background: var(--k-reserva) }
+.track.total i { background: var(--k-tramite) }
 .goal .pct { font-size: 12.5px; color: var(--muted) }
 .goal .pct.done { color: var(--ok); font-weight: 600 }
 .cbar { display: grid; gap: 4px; margin-bottom: 10px }
@@ -135,8 +140,8 @@ button { cursor: pointer }
 .task.done .check { background: var(--ok); border-color: var(--ok) }
 .task[class*="c-"]:hover { background: color-mix(in srgb, var(--c) 14%, #ffffff) }
 .chip[class*="c-"] { background: color-mix(in srgb, var(--c) 10%, #ffffff); border-color: color-mix(in srgb, var(--c) 30%, #ffffff) }
-.chip[class*="c-"][aria-pressed="true"] { background: var(--c); border-color: var(--c); color: #ffffff }
-.chip[class*="c-"][aria-pressed="true"]::before { background: #ffffff }
+.chip[class*="c-"][aria-pressed="true"] { background: var(--c); border-color: var(--c); color: var(--on-c) }
+.chip[class*="c-"][aria-pressed="true"]::before { background: var(--on-c) }
 .chip:not([class*="c-"]) { background: var(--tint) }
 .chip:not([class*="c-"])[aria-pressed="true"] { background: var(--ink) }
 
@@ -145,21 +150,29 @@ button { cursor: pointer }
 .subwrap { grid-column: 2 / -1; display: grid; gap: 8px }
 .subtoggle { justify-self: start; background: #ffffff; border: 1px solid color-mix(in srgb, var(--c, var(--line)) 40%, #ffffff); color: var(--ink); border-radius: 99px; padding: 4px 12px; font-size: 13px; font-weight: 600 }
 .subs { background: #ffffff; border: 1px solid color-mix(in srgb, var(--c, var(--line)) 25%, #ffffff); border-radius: 12px; padding: 6px 10px; display: grid }
-.sub { display: grid; grid-template-columns: auto minmax(0, 1fr) 84px auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--line) }
-.sub input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--c, var(--ok)); margin: 0 }
-.sub label { overflow-wrap: anywhere; cursor: pointer }
-.sub.done label { text-decoration: line-through; color: var(--muted) }
+.subitem { display: grid; grid-template-columns: auto minmax(0, 1fr) 84px auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--line) }
+.subitem input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--c, var(--ok)); margin: 0 }
+.subitem label { overflow-wrap: anywhere; cursor: pointer }
+.subitem.done label { text-decoration: line-through; color: var(--muted) }
 .subamt { width: 100%; min-width: 0; text-align: right; border: 1px solid var(--line); background: var(--tint); border-radius: 8px; padding: 5px 8px; font-size: 13.5px }
 .subdel { border: 0; background: transparent; color: var(--muted); font-size: 20px; line-height: 1; padding: 2px 6px; border-radius: 6px }
 .subdel:hover { background: var(--bad-soft); color: var(--bad) }
 .subadd { display: grid; grid-template-columns: minmax(0, 1fr) 84px auto; gap: 8px; padding: 8px 0 4px }
 .subname { min-width: 0; border: 1px solid var(--line); background: var(--tint); border-radius: 8px; padding: 6px 10px }
-.subplus { border: 0; background: var(--c, var(--accent)); color: #ffffff; border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 13.5px }
-.c-dinero .subplus { background: var(--mustard-ink) }
+.subplus { border: 0; background: var(--c, var(--accent)); color: var(--on-c, var(--accent-ink)); border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 13.5px }
 .subsum { font-size: 13px; color: var(--muted); padding: 4px 0 2px; font-weight: 500 }
 .subsum.over, .amt.over { color: var(--bad) }
 .amt small { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted) }
-@media (max-width: 420px) { .sub { grid-template-columns: auto minmax(0, 1fr) 72px auto } .subadd { grid-template-columns: minmax(0, 1fr) 72px } .subplus { grid-column: 1 / -1 } }
+@media (max-width: 420px) { .subitem { grid-template-columns: auto minmax(0, 1fr) 72px auto } .subadd { grid-template-columns: minmax(0, 1fr) 72px } .subplus { grid-column: 1 / -1 } }
+
+/* Palette picker */
+.palettes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.palettes .label { margin-right: 2px }
+.pal { display: inline-flex; align-items: center; gap: 0; border: 2px solid var(--line); background: var(--surface); border-radius: 99px; padding: 4px 6px; cursor: pointer }
+.pal i { width: 18px; height: 18px; border-radius: 50%; margin-left: -4px; border: 2px solid var(--surface) }
+.pal i:first-child { margin-left: 0 }
+.pal span { font-size: 12.5px; font-weight: 600; margin-left: 6px; margin-right: 2px }
+.pal[aria-pressed="true"] { border-color: var(--ink) }
 
 /* Alerts */
 .alerts { display: grid; gap: 8px }
@@ -187,11 +200,11 @@ button { cursor: pointer }
 .amt { text-align: right; font-weight: 600; font-size: 14px; white-space: nowrap }
 .pill { grid-column: 2 / -1; justify-self: start; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 99px }
 .pill.bad { background: var(--bad-soft); color: var(--bad) } .pill.warn { background: var(--warn-soft); color: var(--warn) } .pill.ok { background: var(--ok-soft); color: var(--ok) }
-.gcal { grid-column: 2 / -1; font-size: 12.5px; color: var(--accent); text-decoration: none; font-weight: 500 }
+.gcal { grid-column: 2 / -1; font-size: 12.5px; color: var(--accent-text); text-decoration: none; font-weight: 500 }
 .empty { text-align: center; color: var(--muted); padding: 28px 12px; border: 1px dashed var(--line); border-radius: 14px }
 .notice { padding: 12px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: 14px }
 
-.fab { position: fixed; right: max(16px, calc(env(safe-area-inset-right, 0px) + 16px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); background: var(--accent); color: #fff; border: 0; border-radius: 99px; padding: 14px 22px; font-weight: 600; box-shadow: 4px 4px 0 var(--cobalt); font-size: 15px }
+.fab { position: fixed; right: max(16px, calc(env(safe-area-inset-right, 0px) + 16px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 99px; padding: 14px 22px; font-weight: 600; box-shadow: 4px 4px 0 var(--hero); font-size: 15px }
 .tools { display: flex; gap: 8px; flex-wrap: wrap }
 .tools .iconbtn { flex: 1; min-width: 140px; padding: 10px }
 
@@ -199,7 +212,7 @@ button { cursor: pointer }
 .overlay { position: fixed; inset: 0; background: rgba(10,15,25,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 20 }
 .sheet { background: var(--surface); width: 100%; max-width: 560px; border-radius: 20px 20px 0 0; padding: 18px max(16px, env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); max-height: 92vh; overflow-y: auto; display: grid; gap: 12px }
 @media (min-width: 600px) { .overlay { align-items: center } .sheet { border-radius: 20px } }
-.sheet h2 { font-family: var(--fun); font-weight: 400; font-size: 24px; color: var(--cobalt) }
+.sheet h2 { font-family: var(--fun); font-weight: 400; font-size: 24px; color: var(--head) }
 .field { display: grid; gap: 4px }
 .field input, .field select, .field textarea { border: 1px solid var(--line); background: var(--tint); border-radius: 10px; padding: 10px; width: 100%; min-width: 0 }
 .field small { color: var(--muted); font-size: 12px }
@@ -208,7 +221,7 @@ button { cursor: pointer }
 .cats { display: flex; flex-wrap: wrap; gap: 6px }
 .actions { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; margin-top: 4px }
 .btn { border: 0; border-radius: 10px; padding: 11px 18px; font-weight: 600 }
-.btn.primary { background: var(--accent); color: #fff }
+.btn.primary { background: var(--accent); color: var(--accent-ink) }
 .btn.ghost { background: transparent; border: 1px solid var(--line) }
 .btn.danger { background: transparent; color: var(--bad) }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 84px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 30; max-width: calc(100% - 32px) }
@@ -244,6 +257,7 @@ html { color-scheme: light } body { margin: 0 }
     <button class="iconbtn" id="editPlanBtn" type="button">Editar</button>
     <button class="iconbtn" id="logoutBtn" type="button">Salir</button>
   </div>
+  <div class="palettes" id="palettes" role="group" aria-label="Paleta de colores"></div>
 
   <section class="hero">
     <h1 id="planName">Cargando…</h1>

@@ -17,6 +17,53 @@ const fmtPEN = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PE
 const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','set','oct','nov','dic'];
 
+// ---------- color palettes ----------
+const INK = '#1c2142';
+const PALETTES = [
+  { id: 'eclectico', name: 'Ecléctico', cats: { tramite: '#2348b8', compra: '#e0442a', reserva: '#18864a', llamada: '#e9609a', dinero: '#c98a00', otro: '#7b4bc4' },
+    hero: '#2348b8', heroTitle: '#f4ef4a', heroShadow: '#e0442a', deco: ['#e0442a', '#18864a', '#e9609a', '#f2b129'], badge: '#f2b129', accent: '#e0442a', frame: '#f2b129', frameShadow: '#18864a' },
+  { id: 'fuego', name: 'Fuego', cats: { tramite: '#8a2be2', compra: '#ff1a00', reserva: '#ff6a00', llamada: '#ff1493', dinero: '#c400ff', otro: '#f0124a' },
+    hero: '#8a2be2', heroTitle: '#ffffff', heroShadow: '#ff1493', deco: ['#ff6a00', '#ff00ff', '#ff44cc', '#ff1a00'], badge: '#ff6a00', accent: '#ff1a00', frame: '#ff1493', frameShadow: '#8a2be2' },
+  { id: 'neon', name: 'Pastel neón', cats: { tramite: '#a9c3cc', compra: '#f2c0b8', reserva: '#33ff11', llamada: '#c9c9f2', dinero: '#ffd000', otro: '#a8e000' },
+    hero: '#e4e4f8', heroTitle: '#1e1e1e', heroShadow: '#e0ff00', deco: ['#ffd000', '#33ff11', '#f2c0b8', '#a9c3cc'], badge: '#e0ff00', accent: '#ffd000', frame: '#ffd000', frameShadow: '#a8e000' },
+  { id: 'oceano', name: 'Océano', cats: { tramite: '#14305a', compra: '#008b8b', reserva: '#00bce0', llamada: '#4169e1', dinero: '#33ddcc', otro: '#004a4a' },
+    hero: '#14305a', heroTitle: '#33eeee', heroShadow: '#008b8b', deco: ['#00bce0', '#99ff99', '#4169e1', '#33ddcc'], badge: '#99ff99', accent: '#008b8b', frame: '#33ddcc', frameShadow: '#14305a' },
+];
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const lum = h => { const [r, g, b] = rgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
+const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + .05) / (y + .05); };
+const mix = (a, b, t) => '#' + rgb(a).map((v, i) => Math.round(v * (1 - t) + rgb(b)[i] * t).toString(16).padStart(2, '0')).join('');
+const onColor = c => contrast(c, '#ffffff') >= contrast(c, INK) ? '#ffffff' : INK;
+// darken a color toward ink until it reads as text on white
+const textOnWhite = c => { for (let t = 0; t <= 1; t += .05) { const m = mix(c, INK, t); if (contrast(m, '#ffffff') >= 4.5) return m; } return INK; };
+let paletteId = 'eclectico';
+function applyPalette(id) {
+  const P = PALETTES.find(x => x.id === id) || PALETTES[0];
+  paletteId = P.id;
+  const st = document.documentElement.style;
+  for (const [k, c] of Object.entries(P.cats)) { st.setProperty('--k-' + k, c); st.setProperty('--k-' + k + '-ink', textOnWhite(c)); st.setProperty('--k-' + k + '-on', onColor(c)); }
+  const set = { hero: P.hero, 'hero-ink': onColor(P.hero) === '#ffffff' ? '#fff8ef' : INK, 'hero-title': P.heroTitle, 'hero-shadow': P.heroShadow,
+    deco1: P.deco[0], deco2: P.deco[1], deco3: P.deco[2], deco4: P.deco[3], badge: P.badge, 'badge-ink': onColor(P.badge),
+    accent: P.accent, 'accent-ink': onColor(P.accent), 'accent-text': textOnWhite(P.accent), head: textOnWhite(P.hero), frame: P.frame, 'frame-shadow': P.frameShadow };
+  for (const [k, v] of Object.entries(set)) st.setProperty('--' + k, v);
+  const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = P.hero;
+  try { localStorage.setItem('palette', P.id); } catch {}
+  renderPalettes();
+}
+function renderPalettes() {
+  const host = document.getElementById('palettes'); if (!host) return;
+  const label = document.createElement('span'); label.className = 'label'; label.textContent = 'Colores';
+  host.replaceChildren(label, ...PALETTES.map(P => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pal'; b.title = P.name;
+    b.setAttribute('aria-pressed', String(P.id === paletteId)); b.setAttribute('aria-label', 'Paleta ' + P.name);
+    for (const c of [P.hero, P.cats.compra, P.cats.reserva, P.badge]) { const i = document.createElement('i'); i.style.background = c; b.append(i); }
+    const n = document.createElement('span'); n.textContent = P.name; b.append(n);
+    b.onclick = () => choosePalette(P.id);
+    return b;
+  }));
+}
+try { applyPalette(localStorage.getItem('palette') || 'eclectico'); } catch { applyPalette('eclectico'); }
+
 let user = null, plans = [], planId = null, tasks = [], filter = 'pend';
 let subs = {};            // task id -> list of subtasks
 const open = new Set();   // tasks whose checklist is expanded
@@ -35,7 +82,7 @@ function money(t) {
 }
 
 // ---------- mapping between database rows and app objects ----------
-const fromPlan = r => ({ id: r.id, name: r.name, date: r.date || '', rate: r.rate, savedPEN: r.saved_pen, savedUSD: r.saved_usd, createdAt: r.created_at });
+const fromPlan = r => ({ id: r.id, name: r.name, date: r.date || '', rate: r.rate, savedPEN: r.saved_pen, savedUSD: r.saved_usd, createdAt: r.created_at, palette: r.palette || 'eclectico' });
 const fromTask = r => ({ id: r.id, title: r.title, category: r.category, idealDate: r.ideal_date || '', deadline: r.deadline || '', amount: r.amount ?? '', currency: r.currency, notes: r.notes || '', done: r.done, hasList: !!r.has_list });
 const toTask = t => ({ title: t.title, category: t.category, ideal_date: t.idealDate || null, deadline: t.deadline || null, amount: t.amount === '' || t.amount == null ? null : num(t.amount), currency: t.currency, notes: t.notes || '', done: !!t.done, has_list: !!t.hasList, updated_at: new Date().toISOString() });
 
@@ -73,6 +120,7 @@ function renderPlans() {
 function renderHeader() {
   const p = plan();
   if (!p) { $('planName').textContent = 'Crea tu primera actividad'; $('planDate').textContent = 'Toca “+ Actividad” arriba para empezar.'; $('days').textContent = '–'; return; }
+  if (p.palette && p.palette !== paletteId) applyPalette(p.palette);
   $('planName').textContent = p.name || 'Sin nombre';
   if (p.date) {
     const left = diffDays(todayStr(), p.date);
@@ -244,7 +292,7 @@ function checklist(t, m) {
   const f = t.currency === 'USD' ? fmtUSD : fmtPEN;
   const box = mk('div', { className: 'subs' });
   for (const x of subs[t.id] || []) {
-    const row = mk('div', { className: 'sub' + (x.done ? ' done' : '') });
+    const row = mk('div', { className: 'subitem' + (x.done ? ' done' : '') });
     const cb = mk('input', { type: 'checkbox', checked: x.done, id: 'sub-' + x.id });
     cb.onchange = () => updateSub(x, { done: cb.checked });
     const lab = mk('label', { htmlFor: 'sub-' + x.id, textContent: x.title });
@@ -472,6 +520,14 @@ async function deleteSub(x) {
   subs[x.taskId] = (subs[x.taskId] || []).filter(y => y.id !== x.id); render();
   const { error } = await sb.from('subtasks').delete().eq('id', x.id);
   if (error) { toast('No se pudo quitar.'); await loadTasks(); render(); }
+}
+
+async function choosePalette(id) {
+  applyPalette(id);
+  const p = plan(); if (!p) return;
+  p.palette = id;
+  const { error } = await sb.from('plans').update({ palette: id }).eq('id', p.id);
+  if (error) toast('No se pudo guardar la paleta.');
 }
 
 // ---------- calendar export ----------
