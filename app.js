@@ -18,6 +18,21 @@ const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'US
 const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','set','oct','nov','dic'];
 
 let user = null, plans = [], planId = null, tasks = [], filter = 'pend';
+let subs = {};            // task id -> list of subtasks
+const open = new Set();   // tasks whose checklist is expanded
+try { JSON.parse(localStorage.getItem('openLists') || '[]').forEach(id => open.add(id)); } catch {}
+const saveOpen = () => { try { localStorage.setItem('openLists', JSON.stringify([...open])); } catch {} };
+const fromSub = r => ({ id: r.id, taskId: r.task_id, title: r.title, amount: r.amount ?? '', done: r.done });
+
+// Money for one task. With priced checklist items: budget = task amount (or the sum of the items), spent = checked items.
+function money(t) {
+  const list = subs[t.id] || [];
+  const priced = list.filter(x => num(x.amount));
+  const itemsTotal = priced.reduce((a, x) => a + num(x.amount), 0);
+  const spent = priced.filter(x => x.done).reduce((a, x) => a + num(x.amount), 0);
+  const budget = num(t.amount) || itemsTotal;
+  return { budget, spent, hasPriced: priced.length > 0, count: list.length, doneCount: list.filter(x => x.done).length };
+}
 
 // ---------- mapping between database rows and app objects ----------
 const fromPlan = r => ({ id: r.id, name: r.name, date: r.date || '', rate: r.rate, savedPEN: r.saved_pen, savedUSD: r.saved_usd, createdAt: r.created_at });
@@ -74,9 +89,11 @@ function renderBudget() {
   const p = plan() || {};
   let needPEN = 0, needUSD = 0, paidPEN = 0, paidUSD = 0;
   for (const t of tasks) {
-    const a = num(t.amount); if (!a) continue;
-    const usd = t.currency === 'USD';
-    if (t.done) usd ? paidUSD += a : paidPEN += a; else usd ? needUSD += a : needPEN += a;
+    const m = money(t), usd = t.currency === 'USD';
+    let paid, need;
+    if (m.hasPriced) { paid = m.spent; need = t.done ? 0 : Math.max(m.budget - m.spent, 0); }
+    else { paid = t.done ? m.budget : 0; need = t.done ? 0 : m.budget; }
+    if (usd) { paidUSD += paid; needUSD += need; } else { paidPEN += paid; needPEN += need; }
   }
   const gPEN = needPEN - num(p.savedPEN), gUSD = needUSD - num(p.savedUSD);
   $('needPEN').textContent = fmtPEN.format(needPEN); $('needUSD').textContent = fmtUSD.format(needUSD);
@@ -151,8 +168,11 @@ function renderList() {
     if (t.notes) { const m = document.createElement('span'); m.textContent = t.notes.length > 50 ? t.notes.slice(0, 50) + '…' : t.notes; meta.append(m); }
     body.append(cat, ttl, meta);
     const amt = document.createElement('div'); amt.className = 'amt num';
-    amt.textContent = num(t.amount) ? (t.currency === 'USD' ? fmtUSD : fmtPEN).format(num(t.amount)) : '';
+    const m = money(t), f = t.currency === 'USD' ? fmtUSD : fmtPEN;
+    if (m.hasPriced) { amt.textContent = f.format(m.spent); amt.append(mk('small', { textContent: 'gastado de ' + f.format(m.budget) })); if (num(t.amount) && m.spent > num(t.amount)) amt.classList.add('over'); }
+    else amt.textContent = m.budget ? f.format(m.budget) : '';
     el.append(ck, body, amt);
+    el.append(checklist(t, m));
     if (s.text && !t.done) { const p = document.createElement('span'); p.className = 'pill ' + s.cls; p.textContent = s.text; el.append(p); }
     const g = !t.done && gcalUrl(t);
     if (g) { const a = document.createElement('a'); a.className = 'gcal'; a.href = g; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Añadir a Google Calendar'; el.append(a); }
@@ -165,9 +185,10 @@ function renderCharts() {
   let needPEN = 0, needUSD = 0;
   const byCat = {};
   for (const t of tasks) {
-    const a = num(t.amount); if (!a) continue;
+    const m = money(t), a = m.budget; if (!a) continue;
     const usd = t.currency === 'USD';
-    if (!t.done) usd ? needUSD += a : needPEN += a;
+    const need = t.done ? 0 : (m.hasPriced ? Math.max(a - m.spent, 0) : a);
+    usd ? needUSD += need : needPEN += need;
     const inPEN = usd ? a * rate : a;
     byCat[t.category] = (byCat[t.category] || 0) + inPEN;
   }
@@ -209,6 +230,49 @@ function renderCharts() {
   }));
   if (!rate && Object.keys(byCat).length) host.append(mk('div', { className: 'chart-empty', textContent: 'Pon el tipo de cambio para sumar también los montos en dólares.' }));
 }
+
+function checklist(t, m) {
+  const wrap = mk('div', { className: 'subwrap' });
+  const isOpen = open.has(t.id);
+  const tog = mk('button', { type: 'button', className: 'subtoggle' });
+  tog.setAttribute('aria-expanded', String(isOpen));
+  tog.textContent = m.count ? 'Lista · ' + m.doneCount + ' de ' + m.count + (isOpen ? ' ▴' : ' ▾') : (isOpen ? 'Ocultar lista ▴' : '+ Agregar lista');
+  tog.onclick = () => { isOpen ? open.delete(t.id) : open.add(t.id); saveOpen(); renderList(); if (!isOpen) focusAdd(t.id); };
+  wrap.append(tog);
+  if (!isOpen) return wrap;
+  const f = t.currency === 'USD' ? fmtUSD : fmtPEN;
+  const box = mk('div', { className: 'subs' });
+  for (const x of subs[t.id] || []) {
+    const row = mk('div', { className: 'sub' + (x.done ? ' done' : '') });
+    const cb = mk('input', { type: 'checkbox', checked: x.done, id: 'sub-' + x.id });
+    cb.onchange = () => updateSub(x, { done: cb.checked });
+    const lab = mk('label', { htmlFor: 'sub-' + x.id, textContent: x.title });
+    const price = mk('input', { className: 'subamt num', inputMode: 'decimal', value: x.amount === '' ? '' : x.amount, placeholder: t.currency === 'USD' ? '$' : 'S/' });
+    price.setAttribute('aria-label', 'Precio de ' + x.title);
+    price.onchange = () => updateSub(x, { amount: price.value.trim() === '' ? null : num(price.value) });
+    const del = mk('button', { type: 'button', className: 'subdel', textContent: '×' });
+    del.setAttribute('aria-label', 'Quitar ' + x.title);
+    del.onclick = () => deleteSub(x);
+    row.append(cb, lab, price, del); box.append(row);
+  }
+  const add = mk('form', { className: 'subadd' });
+  const name = mk('input', { placeholder: 'Agregar a la lista…', className: 'subname' });
+  name.dataset.task = t.id; name.setAttribute('aria-label', 'Nuevo elemento');
+  const price = mk('input', { className: 'subamt num', inputMode: 'decimal', placeholder: t.currency === 'USD' ? '$' : 'S/' });
+  price.setAttribute('aria-label', 'Precio');
+  add.append(name, price, mk('button', { type: 'submit', className: 'subplus', textContent: 'Agregar' }));
+  add.onsubmit = e => { e.preventDefault(); if (!name.value.trim()) return; addSub(t, name.value.trim(), price.value.trim() === '' ? null : num(price.value)); };
+  box.append(add);
+  if (m.hasPriced) {
+    const sum = mk('div', { className: 'subsum num' });
+    sum.textContent = 'Gastado ' + f.format(m.spent) + ' de ' + f.format(m.budget) + (num(t.amount) ? ' (presupuesto de la tarea)' : ' (suma de la lista)');
+    if (num(t.amount) && m.spent > num(t.amount)) { sum.classList.add('over'); sum.textContent += ' · te pasaste por ' + f.format(m.spent - num(t.amount)); }
+    box.append(sum);
+  }
+  wrap.append(box);
+  return wrap;
+}
+function focusAdd(taskId) { setTimeout(() => { const i = document.querySelector('.subname[data-task="' + taskId + '"]'); if (i) i.focus(); }, 0); }
 
 function renderProgress() {
   const done = tasks.filter(t => t.done).length;
@@ -322,6 +386,11 @@ async function loadTasks() {
   const { data, error } = await sb.from('tasks').select('*').eq('plan_id', planId).order('created_at');
   if (error) { showNotice('No se pudieron cargar tus tareas. Recarga la página.'); return; }
   tasks = data.map(fromTask);
+  subs = {};
+  if (tasks.length) {
+    const r = await sb.from('subtasks').select('*').in('task_id', tasks.map(t => t.id)).order('created_at');
+    if (!r.error) for (const x of r.data.map(fromSub)) (subs[x.taskId] ||= []).push(x);
+  }
 }
 async function selectPlan(id) {
   planId = id; try { localStorage.setItem('planId', id); } catch {}
@@ -368,6 +437,24 @@ function patchPlan(fields) {
     const { error } = await sb.from('plans').update(row).eq('id', planId);
     if (error) toast('No se pudo guardar el presupuesto.');
   }, 700);
+}
+
+async function addSub(t, title, amount) {
+  const { data, error } = await sb.from('subtasks').insert({ task_id: t.id, title, amount }).select().single();
+  if (error) { toast('No se pudo agregar. Inténtalo otra vez.'); return; }
+  (subs[t.id] ||= []).push(fromSub(data)); render(); focusAdd(t.id);
+}
+async function updateSub(x, fields) {
+  const list = subs[x.taskId] || [];
+  const local = { ...x, ...fields }; if ('amount' in fields) local.amount = fields.amount ?? '';
+  subs[x.taskId] = list.map(y => y.id === x.id ? local : y); render();
+  const { error } = await sb.from('subtasks').update(fields).eq('id', x.id);
+  if (error) { toast('No se pudo guardar.'); await loadTasks(); render(); }
+}
+async function deleteSub(x) {
+  subs[x.taskId] = (subs[x.taskId] || []).filter(y => y.id !== x.id); render();
+  const { error } = await sb.from('subtasks').delete().eq('id', x.id);
+  if (error) { toast('No se pudo quitar.'); await loadTasks(); render(); }
 }
 
 // ---------- calendar export ----------
