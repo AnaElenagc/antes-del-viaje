@@ -256,7 +256,7 @@ button { cursor: pointer }
 .hero h1[role="button"]::after { content: "✎"; font-family: var(--body); font-size: 18px; text-shadow: none; margin-left: 10px; opacity: .55; vertical-align: middle }
 .hero h1[role="button"]:hover::after { opacity: 1 }
 
-@media (max-width: 600px) { .top { flex-wrap: wrap } .top select { flex: 1 1 100% } .top .iconbtn { flex: 1 1 auto } }
+@media (max-width: 600px) { .top { flex-wrap: wrap } .top select { flex: 1 1 100% } .top .iconbtn { flex: 1 1 0; padding: 7px 4px; font-size: 13px; white-space: nowrap } }
 
 .hero h1 .emo { text-shadow: none; font-family: "Twemoji Country Flags", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: .85em }
 .emojis { display: flex; flex-wrap: wrap; gap: 4px; margin-top: -4px }
@@ -269,6 +269,9 @@ button { cursor: pointer }
 .linkchip { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--accent-text); background: #ffffff; border: 1px solid color-mix(in srgb, var(--accent-text) 30%, #ffffff); border-radius: 99px; padding: 3px 10px; text-decoration: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle }
 .linkchip:hover { text-decoration: underline }
 .subitem .linkchip { margin: 0 2px }
+
+.sheet .hint { margin: -4px 0 0; color: var(--muted); font-size: 13.5px }
+.showpw { display: flex; gap: 8px; align-items: center; font-size: 13.5px; color: var(--muted) }
 
 /* Alerts */
 .alerts { display: grid; gap: 8px }
@@ -332,6 +335,10 @@ html { color-scheme: light } body { margin: 0 }
 .login form { display: grid; gap: 12px }
 .login p { margin: 0; color: var(--muted) }
 .login .ok { color: var(--ok); font-weight: 600 }
+.login .err { color: var(--bad); font-weight: 600 }
+.login-alt { display: grid; gap: 4px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 13.5px; color: var(--muted) }
+.linkbtn2 { justify-self: start; background: none; border: 0; padding: 0; color: var(--accent-text); font-weight: 700; text-decoration: underline; font-size: 14px }
+.pwd-banner { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; background: var(--badge); color: var(--badge-ink); border-radius: 14px; padding: 12px 14px; font-weight: 600 }
 </style>
 </head>
 <body>
@@ -341,16 +348,22 @@ html { color-scheme: light } body { margin: 0 }
 <div class="login" id="login" hidden>
   <section class="hero"><h1>Antes del Viaje</h1><div class="sub">Tus pendientes, fechas límite y presupuesto, en el celular y la laptop.</div></section>
   <form class="card" id="loginForm">
-    <label class="field"><span class="label">Tu correo</span><input id="email" type="email" autocomplete="email" required placeholder="tucorreo@gmail.com"></label>
-    <button class="btn primary" type="submit" id="loginBtn">Enviarme el enlace para entrar</button>
-    <p id="loginMsg">Te llega un correo con un enlace. Lo abres y listo, sin contraseña.</p>
+    <label class="field"><span class="label">Tu correo</span><input id="email" name="email" type="email" autocomplete="username" required placeholder="tucorreo@gmail.com"></label>
+    <label class="field"><span class="label">Contraseña</span><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña"></label>
+    <button class="btn primary" type="submit" id="loginBtn">Entrar</button>
+    <p id="loginMsg"></p>
+    <div class="login-alt">
+      <span>¿Primera vez, aún no tienes contraseña o la olvidaste?</span>
+      <button type="button" class="linkbtn2" id="magicBtn">Enviarme un enlace al correo</button>
+    </div>
   </form>
 </div>
 <div class="wrap" id="app" hidden>
   <div class="top">
     <select id="planSel" aria-label="Actividad"></select>
     <button class="iconbtn" id="newPlanBtn" type="button">+ Actividad</button>
-    <button class="iconbtn" id="editPlanBtn" type="button">Editar actividad</button>
+    <button class="iconbtn" id="editPlanBtn" type="button" title="Editar actividad">Editar</button>
+    <button class="iconbtn" id="pwdBtn" type="button">Contraseña</button>
     <button class="iconbtn" id="logoutBtn" type="button">Salir</button>
   </div>
   <div class="palettes" id="palettes" role="group" aria-label="Paleta de colores"></div>
@@ -366,6 +379,7 @@ html { color-scheme: light } body { margin: 0 }
   </div>
 
   <div id="notice" class="notice" hidden></div>
+  <div id="pwdBanner" class="pwd-banner" hidden><span>🔑 Crea una contraseña para entrar más rápido, sin esperar el correo.</span><button type="button" class="btn primary" id="pwdBannerBtn">Crear contraseña</button></div>
   <div class="alerts" id="alerts"></div>
 
   <div class="tabs" role="tablist" aria-label="Etapa">

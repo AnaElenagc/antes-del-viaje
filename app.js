@@ -875,16 +875,59 @@ $('rate').oninput = e => { const v = num(e.target.value); if (v > 0) patchPlan({
 $('rateAuto').onclick = async () => { const p = plan(); if (!p) return; p.rate = null; $('rateEditor').hidden = true; render(); const { error } = await sb.from('plans').update({ rate: null }).eq('id', p.id); if (error) toast('No se pudo guardar.'); else toast('Usando el tipo de cambio de hoy'); };
 $('logoutBtn').onclick = async () => { await sb.auth.signOut(); };
 
+function loginMsg(text, kind) { $('loginMsg').textContent = text; $('loginMsg').className = kind || ''; }
 $('loginForm').onsubmit = async e => {
   e.preventDefault();
-  const email = $('email').value.trim();
-  if (!email) return;
-  $('loginBtn').disabled = true; $('loginMsg').className = ''; $('loginMsg').textContent = 'Enviando…';
-  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin } });
+  const email = $('email').value.trim(), password = $('password').value;
+  if (!email) { loginMsg('Escribe tu correo.', 'err'); return; }
+  if (!password) { loginMsg('Escribe tu contraseña. Si aún no tienes, usa el enlace al correo de abajo.', 'err'); return; }
+  $('loginBtn').disabled = true; loginMsg('Entrando…');
+  const { error } = await sb.auth.signInWithPassword({ email, password });
   $('loginBtn').disabled = false;
-  if (error) { $('loginMsg').textContent = error.status === 429 ? 'Se enviaron muchos correos seguidos. Espera unos minutos e inténtalo otra vez.' : 'No se pudo enviar el correo. Revisa la dirección e inténtalo otra vez.'; return; }
-  $('loginMsg').className = 'ok'; $('loginMsg').textContent = 'Listo. Revisa tu correo (y la carpeta de spam) y abre el enlace en este mismo dispositivo.';
+  if (error) loginMsg(error.status === 429 ? 'Muchos intentos seguidos. Espera unos minutos.' : 'Correo o contraseña incorrectos. Si aún no creaste tu contraseña, usa el enlace al correo.', 'err');
+  else loginMsg('');
 };
+$('magicBtn').onclick = async () => {
+  const email = $('email').value.trim();
+  if (!email) { loginMsg('Escribe tu correo arriba y vuelve a tocar el enlace.', 'err'); $('email').focus(); return; }
+  $('magicBtn').disabled = true; loginMsg('Enviando…');
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin } });
+  $('magicBtn').disabled = false;
+  if (error) { loginMsg(error.status === 429 ? 'Se enviaron muchos correos seguidos. Espera unos minutos e inténtalo otra vez.' : 'No se pudo enviar el correo. Revisa la dirección.', 'err'); return; }
+  loginMsg('Listo. Revisa tu correo (y spam) y abre el enlace. Al entrar, crea tu contraseña.', 'ok');
+};
+
+// ---------- password ----------
+const hasPassword = () => !!(user && user.user_metadata && user.user_metadata.has_password);
+function renderPwdBanner() { $('pwdBanner').hidden = !user || hasPassword(); }
+function openPassword() {
+  sheet(sh => {
+    const em = mk('input', { type: 'email', value: user.email || '', autocomplete: 'username', readOnly: true }); em.name = 'email';
+    const p1 = mk('input', { id: 'pw1', type: 'password', autocomplete: 'new-password', placeholder: 'Mínimo 6 caracteres' });
+    const p2 = mk('input', { id: 'pw2', type: 'password', autocomplete: 'new-password', placeholder: 'Repítela' });
+    const show = mk('label', { className: 'showpw' }); const cb = mk('input', { type: 'checkbox' });
+    cb.onchange = () => { p1.type = p2.type = cb.checked ? 'text' : 'password'; }; show.append(cb, ' Mostrar contraseña');
+    const err = mk('div', { className: 'notice', hidden: true });
+    p1.oninput = p2.oninput = () => { err.hidden = true; };
+    const actions = mk('div', { className: 'actions' }); const r = mk('div', { style: 'display:flex;gap:8px' });
+    r.append(mk('button', { type: 'button', className: 'btn ghost', textContent: 'Cancelar', onclick: closeSheet }), mk('button', { type: 'submit', className: 'btn primary', textContent: 'Guardar contraseña' }));
+    actions.append(mk('div'), r);
+    sh.append(mk('h2', { textContent: hasPassword() ? 'Cambiar contraseña' : 'Crear contraseña' }),
+      mk('p', { className: 'hint', textContent: 'Tu usuario es tu correo. Cuando el navegador te ofrezca guardar la contraseña, acepta: así la próxima vez se llena sola.' }),
+      field('Usuario (tu correo)', em), field('Nueva contraseña', p1), field('Repite la contraseña', p2), show, err, actions);
+    sh.onsubmit = async e => {
+      e.preventDefault();
+      if (p1.value.length < 6) { err.textContent = 'La contraseña debe tener al menos 6 caracteres.'; err.hidden = false; return; }
+      if (p1.value !== p2.value) { err.textContent = 'Las dos contraseñas no son iguales.'; err.hidden = false; return; }
+      const { data, error } = await sb.auth.updateUser({ password: p1.value, data: { has_password: true } });
+      if (error) { err.textContent = /weak|short|length/i.test(error.message) ? 'Esa contraseña es muy débil. Prueba con una más larga.' : 'No se pudo guardar. Inténtalo otra vez.'; err.hidden = false; return; }
+      if (data && data.user) user = data.user;
+      renderPwdBanner(); closeSheet(); toast('Contraseña guardada 🔑');
+    };
+  });
+}
+$('pwdBtn').onclick = openPassword;
+$('pwdBannerBtn').onclick = openPassword;
 
 function showApp(signedIn) {
   $('login').hidden = signedIn; $('app').hidden = !signedIn;
@@ -898,7 +941,7 @@ sb.auth.onAuthStateChange((event, session) => {
   const next = session ? session.user : null;
   const changed = (next && next.id) !== (user && user.id);
   user = next;
-  showApp(!!user);
+  showApp(!!user); renderPwdBanner();
   if (changed) { plans = []; tasks = []; planId = null; if (user) setTimeout(refresh, 0); else render(); }
 });
 
