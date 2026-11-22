@@ -223,6 +223,12 @@ button { cursor: pointer }
 .detect { font-size: 12px; color: var(--muted) }
 .preview { font-size: 13px; color: var(--muted) }
 
+.hero h1[role="button"] { cursor: pointer }
+.hero h1[role="button"]::after { content: "✎"; font-family: var(--body); font-size: 18px; text-shadow: none; margin-left: 10px; opacity: .55; vertical-align: middle }
+.hero h1[role="button"]:hover::after { opacity: 1 }
+
+@media (max-width: 600px) { .top { flex-wrap: wrap } .top select { flex: 1 1 100% } .top .iconbtn { flex: 1 1 auto } }
+
 /* Alerts */
 .alerts { display: grid; gap: 8px }
 .alert { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; font-size: 14px; border: 0; text-align: left; width: 100% }
@@ -303,13 +309,13 @@ html { color-scheme: light } body { margin: 0 }
   <div class="top">
     <select id="planSel" aria-label="Actividad"></select>
     <button class="iconbtn" id="newPlanBtn" type="button">+ Actividad</button>
-    <button class="iconbtn" id="editPlanBtn" type="button">Editar</button>
+    <button class="iconbtn" id="editPlanBtn" type="button">Editar actividad</button>
     <button class="iconbtn" id="logoutBtn" type="button">Salir</button>
   </div>
   <div class="palettes" id="palettes" role="group" aria-label="Paleta de colores"></div>
 
   <section class="hero">
-    <h1 id="planName">Cargando…</h1>
+    <h1 id="planName" role="button" tabindex="0" title="Cambiar nombre">Cargando…</h1>
     <div class="sub" id="planDate"></div>
     <div class="count"><b class="num" id="days">–</b><span id="daysLbl">días</span></div>
   </section>

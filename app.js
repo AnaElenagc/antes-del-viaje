@@ -657,7 +657,8 @@ function openPlan(p) {
         ? await sb.from('plans').insert(row).select().single()
         : await sb.from('plans').update(row).eq('id', p.id).select().single();
       if (res.error) { err.textContent = 'No se pudo guardar. Revisa tu conexión e inténtalo otra vez.'; err.hidden = false; return; }
-      await loadPlans(); if (isNew) await selectPlan(res.data.id); applyPalette(pal);
+      await loadPlans(); applyPalette(pal);
+      if (isNew) await selectPlan(res.data.id); else render();
       closeSheet(); toast('Guardado');
     };
   });
@@ -794,6 +795,8 @@ $('icsBtn').onclick = () => {
 $('planSel').onchange = e => selectPlan(e.target.value);
 $('newPlanBtn').onclick = () => openPlan(null);
 $('editPlanBtn').onclick = () => plan() && openPlan(plan());
+$('planName').onclick = () => plan() && openPlan(plan());
+$('planName').onkeydown = e => { if ((e.key === 'Enter' || e.key === ' ') && plan()) { e.preventDefault(); openPlan(plan()); } };
 $('addBtn').onclick = () => tab === 'durante' ? openExpense(null) : openTask(null);
 $('addGastoBtn2').onclick = () => openExpense(null);
 $('tabAntes').onclick = () => setTab('antes');
