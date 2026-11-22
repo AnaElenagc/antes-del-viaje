@@ -171,7 +171,7 @@ function renderHeader() {
   const p = plan();
   if (!p) { $('planName').textContent = 'Crea tu primera actividad'; $('planDate').textContent = 'Toca “+ Actividad” arriba para empezar.'; $('days').textContent = '–'; return; }
   if (p.palette && p.palette !== paletteId) applyPalette(p.palette);
-  $('planName').textContent = p.name || 'Sin nombre';
+  setWithEmoji($('planName'), p.name || 'Sin nombre');
   if (p.date) {
     const left = diffDays(todayStr(), p.date);
     $('planDate').textContent = 'Fecha: ' + fmtDate(p.date) + ' ' + p.date.slice(0,4);
@@ -565,6 +565,28 @@ function field(label, input, hint) {
   if (hint) { const s = document.createElement('small'); s.textContent = hint; w.append(s); }
   return w;
 }
+const EMOJI_RE = /(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}|\uFE0F\u200D\p{Extended_Pictographic})*\uFE0F?)/u;
+// text with emojis wrapped so the title shadow skips them
+function setWithEmoji(el, text) {
+  el.replaceChildren(...text.split(EMOJI_RE).filter(Boolean).map(part => EMOJI_RE.test(part) ? mk('span', { className: 'emo', textContent: part }) : document.createTextNode(part)));
+}
+const QUICK_EMOJI = ['✈️','🧳','🏖️','🏔️','🛂','🏨','🎁','💊','👗','🍫','💵','📞','📝','🎉','🏠','🚗','❤️','⭐'];
+function emojiRow(input) {
+  const row = mk('div', { className: 'emojis' });
+  for (const e of QUICK_EMOJI) {
+    const b = mk('button', { type: 'button', textContent: e }); b.setAttribute('aria-label', 'Agregar ' + e);
+    b.onclick = () => {
+      const a = input.selectionStart ?? input.value.length, z = input.selectionEnd ?? a;
+      const before = input.value.slice(0, a), after = input.value.slice(z);
+      const ins = (/[\p{L}\p{N}.,!?)]$/u.test(before) ? ' ' : '') + e;
+      input.value = before + ins + after; input.focus();
+      const pos = (before + ins).length; input.setSelectionRange(pos, pos);
+      input.dispatchEvent(new Event('input'));
+    };
+    row.append(b);
+  }
+  return row;
+}
 function mk(tag, props) { const e = document.createElement(tag); Object.assign(e, props); return e; }
 
 function openTask(t) {
@@ -618,7 +640,7 @@ function openTask(t) {
     right.append(mk('button', { type: 'button', className: 'btn ghost', textContent: 'Cancelar', onclick: closeSheet }), mk('button', { type: 'submit', className: 'btn primary', textContent: 'Guardar' }));
     actions.append(left, right);
 
-    sh.append(h, field('¿Qué hay que hacer?', title), catWrap, listWrap, d1, d2, pWrap, field('Notas', notes), err, actions);
+    sh.append(h, field('¿Qué hay que hacer?', title), emojiRow(title), catWrap, listWrap, d1, d2, pWrap, field('Notas', notes), err, actions);
     sh.onsubmit = e => {
       e.preventDefault();
       if (!title.value.trim()) { err.textContent = 'Escribe qué hay que hacer.'; err.hidden = false; return; }
@@ -648,7 +670,7 @@ function openPlan(p) {
     const r = mk('div', { style: 'display:flex;gap:8px' });
     r.append(mk('button', { type: 'button', className: 'btn ghost', textContent: 'Cancelar', onclick: closeSheet }), mk('button', { type: 'submit', className: 'btn primary', textContent: isNew ? 'Crear' : 'Guardar' }));
     actions.append(mk('div'), r);
-    sh.append(mk('h2', { textContent: isNew ? 'Nueva actividad' : 'Editar actividad' }), field('Nombre', name), field('Fecha del evento', date, 'El día del viaje, la mudanza, etc.'), palWrap, err, actions);
+    sh.append(mk('h2', { textContent: isNew ? 'Nueva actividad' : 'Editar actividad' }), field('Nombre', name), emojiRow(name), field('Fecha del evento', date, 'El día del viaje, la mudanza, etc.'), palWrap, err, actions);
     sh.onsubmit = async e => {
       e.preventDefault();
       if (!name.value.trim()) { err.textContent = 'Ponle un nombre.'; err.hidden = false; return; }

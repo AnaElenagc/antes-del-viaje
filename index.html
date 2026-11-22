@@ -229,6 +229,11 @@ button { cursor: pointer }
 
 @media (max-width: 600px) { .top { flex-wrap: wrap } .top select { flex: 1 1 100% } .top .iconbtn { flex: 1 1 auto } }
 
+.hero h1 .emo { text-shadow: none; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: .85em }
+.emojis { display: flex; flex-wrap: wrap; gap: 4px; margin-top: -4px }
+.emojis button { border: 1px solid var(--line); background: var(--tint); border-radius: 8px; font-size: 18px; line-height: 1; padding: 5px 6px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif }
+.emojis button:hover { background: var(--surface); border-color: var(--ink) }
+
 /* Alerts */
 .alerts { display: grid; gap: 8px }
 .alert { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; font-size: 14px; border: 0; text-align: left; width: 100% }
