@@ -20,14 +20,12 @@ const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','set','oct','nov
 // ---------- color palettes ----------
 const INK = '#1c2142';
 const PALETTES = [
-  { id: 'eclectico', name: 'Ecléctico', cats: { tramite: '#2348b8', compra: '#e0442a', reserva: '#18864a', llamada: '#e9609a', dinero: '#c98a00', otro: '#7b4bc4' },
-    hero: '#2348b8', heroTitle: '#f4ef4a', heroShadow: '#e0442a', deco: ['#e0442a', '#18864a', '#e9609a', '#f2b129'], badge: '#f2b129', accent: '#e0442a', frame: '#f2b129', frameShadow: '#18864a' },
-  { id: 'fuego', name: 'Fuego', cats: { tramite: '#8a2be2', compra: '#ff1a00', reserva: '#ff6a00', llamada: '#ff1493', dinero: '#c400ff', otro: '#f0124a' },
-    hero: '#8a2be2', heroTitle: '#ffffff', heroShadow: '#ff1493', deco: ['#ff6a00', '#ff00ff', '#ff44cc', '#ff1a00'], badge: '#ff6a00', accent: '#ff1a00', frame: '#ff1493', frameShadow: '#8a2be2' },
-  { id: 'neon', name: 'Pastel neón', cats: { tramite: '#a9c3cc', compra: '#f2c0b8', reserva: '#33ff11', llamada: '#c9c9f2', dinero: '#ffd000', otro: '#a8e000' },
-    hero: '#e4e4f8', heroTitle: '#1e1e1e', heroShadow: '#e0ff00', deco: ['#ffd000', '#33ff11', '#f2c0b8', '#a9c3cc'], badge: '#e0ff00', accent: '#ffd000', frame: '#ffd000', frameShadow: '#a8e000' },
-  { id: 'oceano', name: 'Océano', cats: { tramite: '#14305a', compra: '#008b8b', reserva: '#00bce0', llamada: '#4169e1', dinero: '#33ddcc', otro: '#004a4a' },
-    hero: '#14305a', heroTitle: '#33eeee', heroShadow: '#008b8b', deco: ['#00bce0', '#99ff99', '#4169e1', '#33ddcc'], badge: '#99ff99', accent: '#008b8b', frame: '#33ddcc', frameShadow: '#14305a' },
+  { id: 'noche', name: 'La noche', cats: { tramite: '#242a63', compra: '#384a94', reserva: '#92aed1', llamada: '#e9e987', dinero: '#f8c923', otro: '#181c23' },
+    hero: '#181c23', heroTitle: '#f8c923', heroShadow: '#384a94', deco: ['#e9e987', '#92aed1', '#384a94', '#f8c923'], badge: '#f8c923', accent: '#384a94', frame: '#f8c923', frameShadow: '#242a63' },
+  { id: 'popart', name: 'Pop art', cats: { tramite: '#3fb8b5', compra: '#e23129', reserva: '#4aad43', llamada: '#e12293', dinero: '#f0e52f', otro: '#000000' },
+    hero: '#f0e52f', heroTitle: '#000000', heroShadow: '#e12293', deco: ['#3fb8b5', '#e12293', '#4aad43', '#e23129'], badge: '#e12293', accent: '#e23129', frame: '#000000', frameShadow: '#e12293', head: '#000000' },
+  { id: 'neutro', name: 'Neutro', cats: { tramite: '#11527d', compra: '#a03c33', reserva: '#7f97ae', llamada: '#bb966e', dinero: '#5d340d', otro: '#000000' },
+    hero: '#5d340d', heroTitle: '#bb966e', heroShadow: '#a03c33', deco: ['#a03c33', '#7f97ae', '#11527d', '#bb966e'], badge: '#7f97ae', accent: '#11527d', frame: '#bb966e', frameShadow: '#11527d' },
 ];
 const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const lum = h => { const [r, g, b] = rgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
@@ -36,7 +34,7 @@ const mix = (a, b, t) => '#' + rgb(a).map((v, i) => Math.round(v * (1 - t) + rgb
 const onColor = c => contrast(c, '#ffffff') >= contrast(c, INK) ? '#ffffff' : INK;
 // darken a color toward ink until it reads as text on white
 const textOnWhite = c => { for (let t = 0; t <= 1; t += .05) { const m = mix(c, INK, t); if (contrast(m, '#ffffff') >= 4.5) return m; } return INK; };
-let paletteId = 'eclectico';
+let paletteId = 'noche';
 function applyPalette(id) {
   const P = PALETTES.find(x => x.id === id) || PALETTES[0];
   paletteId = P.id;
@@ -44,7 +42,7 @@ function applyPalette(id) {
   for (const [k, c] of Object.entries(P.cats)) { st.setProperty('--k-' + k, c); st.setProperty('--k-' + k + '-ink', textOnWhite(c)); st.setProperty('--k-' + k + '-on', onColor(c)); }
   const set = { hero: P.hero, 'hero-ink': onColor(P.hero) === '#ffffff' ? '#fff8ef' : INK, 'hero-title': P.heroTitle, 'hero-shadow': P.heroShadow,
     deco1: P.deco[0], deco2: P.deco[1], deco3: P.deco[2], deco4: P.deco[3], badge: P.badge, 'badge-ink': onColor(P.badge),
-    accent: P.accent, 'accent-ink': onColor(P.accent), 'accent-text': textOnWhite(P.accent), head: textOnWhite(P.hero), frame: P.frame, 'frame-shadow': P.frameShadow };
+    accent: P.accent, 'accent-ink': onColor(P.accent), 'accent-text': textOnWhite(P.accent), head: P.head || textOnWhite(P.hero), frame: P.frame, 'frame-shadow': P.frameShadow };
   for (const [k, v] of Object.entries(set)) st.setProperty('--' + k, v);
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = P.hero;
   try { localStorage.setItem('palette', P.id); } catch {}
@@ -62,7 +60,7 @@ function renderPalettes() {
     return b;
   }));
 }
-try { applyPalette(localStorage.getItem('palette') || 'eclectico'); } catch { applyPalette('eclectico'); }
+try { applyPalette(localStorage.getItem('palette') || 'noche'); } catch { applyPalette('noche'); }
 
 let user = null, plans = [], planId = null, tasks = [], filter = 'pend';
 let subs = {};            // task id -> list of subtasks
@@ -82,7 +80,7 @@ function money(t) {
 }
 
 // ---------- mapping between database rows and app objects ----------
-const fromPlan = r => ({ id: r.id, name: r.name, date: r.date || '', rate: r.rate, savedPEN: r.saved_pen, savedUSD: r.saved_usd, createdAt: r.created_at, palette: r.palette || 'eclectico' });
+const fromPlan = r => ({ id: r.id, name: r.name, date: r.date || '', rate: r.rate, savedPEN: r.saved_pen, savedUSD: r.saved_usd, createdAt: r.created_at, palette: r.palette || 'noche' });
 const fromTask = r => ({ id: r.id, title: r.title, category: r.category, idealDate: r.ideal_date || '', deadline: r.deadline || '', amount: r.amount ?? '', currency: r.currency, notes: r.notes || '', done: r.done, hasList: !!r.has_list });
 const toTask = t => ({ title: t.title, category: t.category, ideal_date: t.idealDate || null, deadline: t.deadline || null, amount: t.amount === '' || t.amount == null ? null : num(t.amount), currency: t.currency, notes: t.notes || '', done: !!t.done, has_list: !!t.hasList, updated_at: new Date().toISOString() });
 
