@@ -36,8 +36,8 @@ function money(t) {
 
 // ---------- mapping between database rows and app objects ----------
 const fromPlan = r => ({ id: r.id, name: r.name, date: r.date || '', rate: r.rate, savedPEN: r.saved_pen, savedUSD: r.saved_usd, createdAt: r.created_at });
-const fromTask = r => ({ id: r.id, title: r.title, category: r.category, idealDate: r.ideal_date || '', deadline: r.deadline || '', amount: r.amount ?? '', currency: r.currency, notes: r.notes || '', done: r.done });
-const toTask = t => ({ title: t.title, category: t.category, ideal_date: t.idealDate || null, deadline: t.deadline || null, amount: t.amount === '' || t.amount == null ? null : num(t.amount), currency: t.currency, notes: t.notes || '', done: !!t.done, updated_at: new Date().toISOString() });
+const fromTask = r => ({ id: r.id, title: r.title, category: r.category, idealDate: r.ideal_date || '', deadline: r.deadline || '', amount: r.amount ?? '', currency: r.currency, notes: r.notes || '', done: r.done, hasList: !!r.has_list });
+const toTask = t => ({ title: t.title, category: t.category, ideal_date: t.idealDate || null, deadline: t.deadline || null, amount: t.amount === '' || t.amount == null ? null : num(t.amount), currency: t.currency, notes: t.notes || '', done: !!t.done, has_list: !!t.hasList, updated_at: new Date().toISOString() });
 
 // ---------- dates ----------
 function todayStr() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
@@ -172,7 +172,7 @@ function renderList() {
     if (m.hasPriced) { amt.textContent = f.format(m.spent); amt.append(mk('small', { textContent: 'gastado de ' + f.format(m.budget) })); if (num(t.amount) && m.spent > num(t.amount)) amt.classList.add('over'); }
     else amt.textContent = m.budget ? f.format(m.budget) : '';
     el.append(ck, body, amt);
-    el.append(checklist(t, m));
+    const cl = checklist(t, m); if (cl) el.append(cl);
     if (s.text && !t.done) { const p = document.createElement('span'); p.className = 'pill ' + s.cls; p.textContent = s.text; el.append(p); }
     const g = !t.done && gcalUrl(t);
     if (g) { const a = document.createElement('a'); a.className = 'gcal'; a.href = g; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Añadir a Google Calendar'; el.append(a); }
@@ -232,11 +232,12 @@ function renderCharts() {
 }
 
 function checklist(t, m) {
+  if (!t.hasList && !m.count) return null;
   const wrap = mk('div', { className: 'subwrap' });
   const isOpen = open.has(t.id);
   const tog = mk('button', { type: 'button', className: 'subtoggle' });
   tog.setAttribute('aria-expanded', String(isOpen));
-  tog.textContent = m.count ? 'Lista · ' + m.doneCount + ' de ' + m.count + (isOpen ? ' ▴' : ' ▾') : (isOpen ? 'Ocultar lista ▴' : '+ Agregar lista');
+  tog.textContent = m.count ? 'Lista · ' + m.doneCount + ' de ' + m.count + (isOpen ? ' ▴' : ' ▾') : (isOpen ? 'Lista ▴' : 'Abrir lista ▾');
   tog.onclick = () => { isOpen ? open.delete(t.id) : open.add(t.id); saveOpen(); renderList(); if (!isOpen) focusAdd(t.id); };
   wrap.append(tog);
   if (!isOpen) return wrap;
@@ -307,7 +308,7 @@ function mk(tag, props) { const e = document.createElement(tag); Object.assign(e
 
 function openTask(t) {
   const isNew = !t;
-  t = t || { title: '', category: 'compra', idealDate: '', deadline: '', amount: '', currency: 'PEN', notes: '', done: false };
+  t = t || { title: '', category: 'compra', idealDate: '', deadline: '', amount: '', currency: 'PEN', notes: '', done: false, hasList: false };
   sheet(sh => {
     const h = mk('h2', { textContent: isNew ? 'Nueva tarea' : 'Editar tarea' });
     const title = mk('input', { id: 'f-title', value: t.title, placeholder: 'Ej: Comprar maleta de mano', required: true });
@@ -321,11 +322,24 @@ function openTask(t) {
     const cur = mk('select', { id: 'f-cur' });
     cur.append(mk('option', { value: 'PEN', textContent: 'Soles (S/)' }), mk('option', { value: 'USD', textContent: 'Dólares (US$)' }));
     cur.value = t.currency || 'PEN';
+    let hasList = !!t.hasList;
+    const listOpts = mk('div', { className: 'cats' });
+    const listHint = mk('small');
+    const drawList = () => {
+      listOpts.replaceChildren(...[[false, 'No'], [true, 'Sí, necesita una lista']].map(([v, label]) => {
+        const b = mk('button', { type: 'button', className: 'chip', textContent: label });
+        b.setAttribute('aria-pressed', String(hasList === v)); b.onclick = () => { hasList = v; drawList(); }; return b;
+      }));
+      const n = (subs[t.id] || []).length;
+      listHint.textContent = !hasList && n ? 'La lista tiene ' + n + (n === 1 ? ' elemento' : ' elementos') + '. No se borra, solo se oculta.' : 'Para cosas que vas marcando: qué comprar, qué llevar o pasos a seguir. Cada una puede tener precio.';
+    };
+    drawList();
+    const listWrap = mk('div', { className: 'field' }); listWrap.append(mk('span', { className: 'label', textContent: '¿Necesita una lista?' }), listOpts, listHint);
     const notes = mk('textarea', { id: 'f-notes', rows: 2, value: t.notes || '', placeholder: 'Dónde, a quién llamar, qué llevar…' });
     const err = mk('div', { className: 'notice', hidden: true });
 
     const d1 = mk('div', { className: 'two' }); d1.append(field('Fecha ideal', ideal, 'Cuándo te conviene hacerlo'), field('Fecha límite', dead, 'Después de esto, ¡fue!'));
-    const d2 = mk('div', { className: 'two' }); d2.append(field('Monto', amount), field('Moneda', cur));
+    const d2 = mk('div', { className: 'two' }); d2.append(field('Monto', amount, 'Si tiene lista, es tu tope'), field('Moneda', cur));
     const catWrap = mk('div', { className: 'field' }); catWrap.append(mk('span', { className: 'label', textContent: 'Tipo' }), cats);
 
     const actions = mk('div', { className: 'actions' });
@@ -337,12 +351,12 @@ function openTask(t) {
     right.append(mk('button', { type: 'button', className: 'btn ghost', textContent: 'Cancelar', onclick: closeSheet }), mk('button', { type: 'submit', className: 'btn primary', textContent: 'Guardar' }));
     actions.append(left, right);
 
-    sh.append(h, field('¿Qué hay que hacer?', title), catWrap, d1, d2, field('Notas', notes), err, actions);
+    sh.append(h, field('¿Qué hay que hacer?', title), catWrap, listWrap, d1, d2, field('Notas', notes), err, actions);
     sh.onsubmit = e => {
       e.preventDefault();
       if (!title.value.trim()) { err.textContent = 'Escribe qué hay que hacer.'; err.hidden = false; return; }
       if (ideal.value && dead.value && ideal.value > dead.value) { err.textContent = 'La fecha ideal debe ser antes (o igual) que la fecha límite.'; err.hidden = false; return; }
-      saveTask({ ...t, title: title.value.trim(), category: cat, idealDate: ideal.value, deadline: dead.value, amount: amount.value ? num(amount.value) : '', currency: cur.value, notes: notes.value.trim() });
+      saveTask({ ...t, title: title.value.trim(), category: cat, idealDate: ideal.value, deadline: dead.value, amount: amount.value ? num(amount.value) : '', currency: cur.value, notes: notes.value.trim(), hasList });
       closeSheet();
     };
   });
@@ -413,8 +427,11 @@ async function saveTask(t) {
     : await sb.from('tasks').insert({ ...row, plan_id: planId }).select().single();
   if (res.error) { toast('No se pudo guardar. Inténtalo otra vez.'); await loadTasks(); render(); return; }
   const saved = fromTask(res.data);
+  if (saved.hasList && (!t.id || !open.has(saved.id))) { open.add(saved.id); saveOpen(); }
+  if (!saved.hasList && !(subs[saved.id] || []).length) open.delete(saved.id);
   tasks = t.id ? tasks.map(x => x.id === saved.id ? saved : x) : [...tasks, saved];
   render();
+  if (!t.id && saved.hasList) focusAdd(saved.id);
   toast(t.done && t.id ? '¡Listo! Una menos ✓' : 'Guardado');
 }
 async function deleteTask(t) {
