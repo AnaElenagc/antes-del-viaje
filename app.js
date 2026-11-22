@@ -263,13 +263,16 @@ function renderList() {
     const meta = document.createElement('div'); meta.className = 'meta';
     if (t.idealDate) { const m = document.createElement('span'); m.textContent = 'Ideal: ' + fmtDate(t.idealDate); meta.append(m); }
     if (t.deadline) { const m = document.createElement('span'); m.textContent = 'Límite: ' + fmtDate(t.deadline); meta.append(m); }
-    if (t.notes) { const m = document.createElement('span'); m.textContent = t.notes.length > 50 ? t.notes.slice(0, 50) + '…' : t.notes; meta.append(m); }
+    const plainNotes = (t.notes || '').replace(URL_RE, '').replace(/\s+/g, ' ').trim();
+    if (plainNotes) { const m = document.createElement('span'); m.textContent = plainNotes.length > 60 ? plainNotes.slice(0, 60) + '…' : plainNotes; meta.append(m); }
     body.append(cat, ttl, meta);
     const amt = document.createElement('div'); amt.className = 'amt num';
     const m = money(t), f = t.currency === 'USD' ? fmtUSD : fmtPEN;
     if (m.hasPriced) { amt.textContent = f.format(m.spent); amt.append(mk('small', { textContent: 'gastado de ' + f.format(m.budget) })); if (num(t.amount) && m.spent > num(t.amount)) amt.classList.add('over'); }
     else amt.textContent = m.budget ? f.format(m.budget) : '';
     el.append(ck, body, amt);
+    const links = findLinks(t.notes);
+    if (links.length) { const lw = mk('div', { className: 'links' }); links.forEach(u => lw.append(linkChip(u))); el.append(lw); }
     const cl = checklist(t, m); if (cl) el.append(cl);
     if (s.text && !t.done) { const p = document.createElement('span'); p.className = 'pill ' + s.cls; p.textContent = s.text; el.append(p); }
     const g = !t.done && gcalUrl(t);
@@ -345,7 +348,7 @@ function checklist(t, m) {
     const row = mk('div', { className: 'subitem' + (x.done ? ' done' : '') });
     const cb = mk('input', { type: 'checkbox', checked: x.done, id: 'sub-' + x.id });
     cb.onchange = () => updateSub(x, { done: cb.checked });
-    const lab = mk('label', { htmlFor: 'sub-' + x.id, textContent: x.title });
+    const lab = mk('label', { htmlFor: 'sub-' + x.id }); lab.append(...withLinks(x.title));
     const price = mk('input', { className: 'subamt num', inputMode: 'decimal', value: x.amount === '' ? '' : x.amount, placeholder: t.currency === 'USD' ? '$' : 'S/' });
     price.setAttribute('aria-label', 'Precio de ' + x.title);
     price.onchange = () => updateSub(x, { amount: price.value.trim() === '' ? null : num(price.value) });
@@ -595,6 +598,26 @@ function emojiRow(input) {
   row.append(tog, flags);
   return row;
 }
+// ---------- links ----------
+const URL_RE = /(https?:\/\/[^\s<>"]+|www\.[^\s<>"]+)/gi;
+const findLinks = text => (text || '').match(URL_RE) || [];
+const hrefOf = u => (/^https?:/i.test(u) ? u : 'https://' + u).replace(/[.,;:!?)\]]+$/, '');
+const hostOf = u => { try { return new URL(hrefOf(u)).hostname.replace(/^www\./, ''); } catch { return u.slice(0, 30); } };
+function linkChip(u) {
+  const a = mk('a', { href: hrefOf(u), target: '_blank', rel: 'noopener noreferrer', className: 'linkchip', textContent: '🔗 ' + hostOf(u) + ' ↗' });
+  a.title = hrefOf(u); a.onclick = e => e.stopPropagation();
+  return a;
+}
+// text where links become short clickable chips
+function withLinks(text) {
+  const out = []; let last = 0;
+  for (const m of (text || '').matchAll(URL_RE)) {
+    if (m.index > last) out.push(document.createTextNode(text.slice(last, m.index)));
+    out.push(linkChip(m[0])); last = m.index + m[0].length;
+  }
+  if (last < (text || '').length) out.push(document.createTextNode(text.slice(last)));
+  return out;
+}
 function mk(tag, props) { const e = document.createElement(tag); Object.assign(e, props); return e; }
 
 function openTask(t) {
@@ -617,7 +640,7 @@ function openTask(t) {
     const pOpts = mk('div', { className: 'cats' }); const pHint = mk('small');
     const drawP = () => pOpts.replaceChildren(...GCATS.map(c => { const b = mk('button', { type: 'button', className: 'chip g-' + c.id, textContent: c.label }); b.setAttribute('aria-pressed', String(c.id === partida)); b.onclick = () => { partida = c.id; partidaManual = true; pHint.textContent = 'Para el gráfico “¿En qué se va el presupuesto?”.'; drawP(); }; return b; }));
     const autoP = () => { if (partidaManual) return; const d = detectCategory(title.value); partida = d || (title.value.trim() ? 'otros' : ''); pHint.textContent = d ? 'La elegí según el nombre. Toca otra si no es.' : 'Para el gráfico “¿En qué se va el presupuesto?”.'; drawP(); };
-    title.addEventListener('input', autoP); autoP();
+    title.addEventListener('input', autoP); drawP(); autoP();
     const pWrap = mk('div', { className: 'field' }); pWrap.append(mk('span', { className: 'label', textContent: 'Partida del presupuesto' }), pOpts, pHint);
     let hasList = !!t.hasList;
     const listOpts = mk('div', { className: 'cats' });
@@ -634,6 +657,9 @@ function openTask(t) {
     const listWrap = mk('div', { className: 'field' }); listWrap.append(mk('span', { className: 'label', textContent: '¿Necesita una lista?' }), listOpts, listHint);
     const notes = mk('textarea', { id: 'f-notes', rows: 2, value: t.notes || '', placeholder: 'Dónde, a quién llamar, qué llevar…' });
     const err = mk('div', { className: 'notice', hidden: true });
+    const notesLinks = mk('div', { className: 'links' });
+    const drawNotesLinks = () => notesLinks.replaceChildren(...findLinks(notes.value).map(linkChip));
+    notes.addEventListener('input', drawNotesLinks); drawNotesLinks();
 
     const d1 = mk('div', { className: 'two' }); d1.append(field('Fecha ideal', ideal, 'Cuándo te conviene hacerlo'), field('Fecha límite', dead, 'Después de esto, ¡fue!'));
     const d2 = mk('div', { className: 'two' }); d2.append(field('Monto', amount, 'Si tiene lista, es tu tope'), field('Moneda', cur));
@@ -648,7 +674,7 @@ function openTask(t) {
     right.append(mk('button', { type: 'button', className: 'btn ghost', textContent: 'Cancelar', onclick: closeSheet }), mk('button', { type: 'submit', className: 'btn primary', textContent: 'Guardar' }));
     actions.append(left, right);
 
-    sh.append(h, field('¿Qué hay que hacer?', title), emojiRow(title), catWrap, listWrap, d1, d2, pWrap, field('Notas', notes), err, actions);
+    sh.append(h, field('¿Qué hay que hacer?', title), emojiRow(title), catWrap, listWrap, d1, d2, pWrap, field('Notas', notes), notesLinks, err, actions);
     sh.onsubmit = e => {
       e.preventDefault();
       if (!title.value.trim()) { err.textContent = 'Escribe qué hay que hacer.'; err.hidden = false; return; }
