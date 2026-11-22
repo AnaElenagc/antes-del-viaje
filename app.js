@@ -42,7 +42,7 @@ function applyPalette(id) {
   for (const [k, c] of Object.entries(P.cats)) { st.setProperty('--k-' + k, c); st.setProperty('--k-' + k + '-ink', textOnWhite(c)); st.setProperty('--k-' + k + '-on', onColor(c)); }
   const set = { hero: P.hero, 'hero-ink': onColor(P.hero) === '#ffffff' ? '#fff8ef' : INK, 'hero-title': P.heroTitle, 'hero-shadow': P.heroShadow,
     deco1: P.deco[0], deco2: P.deco[1], deco3: P.deco[2], deco4: P.deco[3], badge: P.badge, 'badge-ink': onColor(P.badge),
-    accent: P.accent, 'accent-ink': onColor(P.accent), 'accent-text': textOnWhite(P.accent), head: P.head || textOnWhite(P.hero), frame: P.frame, 'frame-shadow': P.frameShadow };
+    accent: P.accent, 'accent-ink': onColor(P.accent), 'accent-text': textOnWhite(P.accent), head: P.head || textOnWhite(P.hero), frame: P.frame, 'frame-shadow': P.frameShadow, 'frame-ink': onColor(P.frame) };
   for (const [k, v] of Object.entries(set)) st.setProperty('--' + k, v);
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = P.hero;
   try { localStorage.setItem('palette', P.id); } catch {}
@@ -112,9 +112,13 @@ async function loadRates() {
 function toPEN(amount, cur) {
   if (cur === 'PEN') return amount;
   if (rates && rates[cur]) return amount / rates[cur];
-  const p = plan(); if (cur === 'USD' && p && num(p.rate)) return amount * num(p.rate);
+  if (cur === 'USD') return amount * usdRate();
   return null;
 }
+// soles per dollar: the one you typed, else today's, else 3.75
+const liveUsdRate = () => rates && rates.USD ? 1 / rates.USD : 0;
+function usdRate() { const p = plan(); return (p && num(p.rate)) || liveUsdRate() || 3.75; }
+const rateSource = () => { const p = plan(); return p && num(p.rate) ? 'manual' : liveUsdRate() ? 'hoy' : 'aprox'; };
 let subs = {};            // task id -> list of subtasks
 const open = new Set();   // tasks whose checklist is expanded
 try { JSON.parse(localStorage.getItem('openLists') || '[]').forEach(id => open.add(id)); } catch {}
@@ -180,32 +184,31 @@ function renderHeader() {
   } else { $('planDate').textContent = 'Sin fecha'; $('days').textContent = '–'; }
   if (document.activeElement !== $('savedPEN')) $('savedPEN').value = num(p.savedPEN) || '';
   if (document.activeElement !== $('savedUSD')) $('savedUSD').value = num(p.savedUSD) || '';
-  if (document.activeElement !== $('rate')) $('rate').value = num(p.rate) || '';
 }
 
 function renderBudget() {
-  const p = plan() || {};
-  let needPEN = 0, needUSD = 0, paidPEN = 0, paidUSD = 0;
+  const p = plan() || {}, rate = usdRate();
+  let need = 0, paid = 0;   // all in soles
   for (const t of tasks) {
-    const m = money(t), usd = t.currency === 'USD';
-    let paid, need;
-    if (m.hasPriced) { paid = m.spent; need = t.done ? 0 : Math.max(m.budget - m.spent, 0); }
-    else { paid = t.done ? m.budget : 0; need = t.done ? 0 : m.budget; }
-    if (usd) { paidUSD += paid; needUSD += need; } else { paidPEN += paid; needPEN += need; }
+    const m = money(t), k = t.currency === 'USD' ? rate : 1;
+    let pd, nd;
+    if (m.hasPriced) { pd = m.spent; nd = t.done ? 0 : Math.max(m.budget - m.spent, 0); }
+    else { pd = t.done ? m.budget : 0; nd = t.done ? 0 : m.budget; }
+    paid += pd * k; need += nd * k;
   }
-  const gPEN = needPEN - num(p.savedPEN), gUSD = needUSD - num(p.savedUSD);
-  $('needPEN').textContent = fmtPEN.format(needPEN); $('needUSD').textContent = fmtUSD.format(needUSD);
-  $('paidPEN').textContent = fmtPEN.format(paidPEN); $('paidUSD').textContent = fmtUSD.format(paidUSD);
-  const setGap = (el, g, f) => { el.textContent = g > 0 ? f.format(g) : (g < 0 ? 'Te sobra ' + f.format(-g) : f.format(0)); el.className = 'r falta ' + (g > 0 ? 'bad' : 'good'); };
-  setGap($('gapPEN'), gPEN, fmtPEN); setGap($('gapUSD'), gUSD, fmtUSD);
-  const rate = num(p.rate);
-  if (rate > 0) {
-    const total = gPEN + gUSD * rate;
-    const s = document.createElement('span');
-    s.append(total > 0 ? 'Todo junto, te falta ' : 'Todo junto, te sobra ');
-    const b = document.createElement('strong'); b.textContent = fmtPEN.format(Math.abs(total)) + ' ≈ ' + fmtUSD.format(Math.abs(total) / rate);
-    s.append(b); $('combined').replaceChildren(s);
-  } else $('combined').textContent = 'Pon el tipo de cambio para ver todo junto en soles.';
+  const saved = num(p.savedPEN) + num(p.savedUSD) * rate;
+  const gap = need - saved;
+  const both = (idP, idU, v) => { $(idP).textContent = fmtPEN.format(v); $(idU).textContent = fmtUSD.format(v / rate); };
+  both('needPEN', 'needUSD', need); both('paidPEN', 'paidUSD', paid); both('savedTotPEN', 'savedTotUSD', saved);
+  both('gapPEN', 'gapUSD', Math.abs(gap));
+  $('gapLabel').textContent = gap > 0 ? 'Te falta' : gap < 0 ? 'Te sobra' : 'Te falta';
+  for (const id of ['gapPEN', 'gapUSD']) $(id).className = 'gap ' + (gap > 0 ? 'bad' : 'good');
+  if (document.activeElement !== $('savedPEN')) $('savedPEN').value = num(p.savedPEN) || '';
+  if (document.activeElement !== $('savedUSD')) $('savedUSD').value = num(p.savedUSD) || '';
+  const src = rateSource();
+  $('rateShow').textContent = 'S/ ' + rate.toFixed(3).replace(/0$/, '');
+  $('rateSrc').textContent = src === 'manual' ? 'el tuyo' : src === 'hoy' ? 'de hoy, automático' : 'aproximado (sin conexión)';
+  $('rateAuto').hidden = src !== 'manual';
 }
 
 function renderAlerts() {
@@ -282,7 +285,7 @@ function renderList() {
 }
 
 function renderCharts() {
-  const p = plan() || {}, rate = num(p.rate);
+  const p = plan() || {}, rate = usdRate();
   let needPEN = 0, needUSD = 0;
   const byCat = {};
   for (const t of tasks) {
@@ -435,7 +438,7 @@ function renderDurante() {
   } else {
     const big = mk('div', { className: 'bolsa-big num' + (left < 0 ? ' over' : '') });
     big.textContent = left >= 0 ? 'Te quedan ' + fmtPEN.format(left) : 'Te pasaste ' + fmtPEN.format(-left);
-    const sub = mk('p', { className: 'bolsa-sub num', textContent: 'Gastado ' + fmtPEN.format(total) + ' de ' + fmtPEN.format(budgetTotal) + (num(p.rate) ? ' · ≈ ' + fmtUSD.format(Math.max(left, 0) / num(p.rate)) + ' disponibles' : '') });
+    const sub = mk('p', { className: 'bolsa-sub num', textContent: 'Gastado ' + fmtPEN.format(total) + ' de ' + fmtPEN.format(budgetTotal) + ' · ≈ ' + fmtUSD.format(Math.max(left, 0) / usdRate()) + ' disponibles' });
     top.replaceChildren(big, sub);
   }
   const rowsHost = $('bolsaRows');
@@ -857,11 +860,13 @@ $('addBtn').onclick = () => tab === 'durante' ? openExpense(null) : openTask(nul
 $('addGastoBtn2').onclick = () => openExpense(null);
 $('tabAntes').onclick = () => setTab('antes');
 $('tabDurante').onclick = () => setTab('durante');
-loadRates().then(() => { if (user) renderDurante(); });
+loadRates().then(() => { if (user) render(); });
 $('addBtn2').onclick = () => openTask(null);
 $('savedPEN').oninput = e => patchPlan({ savedPEN: num(e.target.value) });
 $('savedUSD').oninput = e => patchPlan({ savedUSD: num(e.target.value) });
-$('rate').oninput = e => patchPlan({ rate: num(e.target.value) });
+$('rateEdit').onclick = () => { $('rateEditor').hidden = !$('rateEditor').hidden; if (!$('rateEditor').hidden) { $('rate').value = usdRate().toFixed(3); $('rate').focus(); $('rate').select(); } };
+$('rate').oninput = e => { const v = num(e.target.value); if (v > 0) patchPlan({ rate: v }); };
+$('rateAuto').onclick = async () => { const p = plan(); if (!p) return; p.rate = null; $('rateEditor').hidden = true; render(); const { error } = await sb.from('plans').update({ rate: null }).eq('id', p.id); if (error) toast('No se pudo guardar.'); else toast('Usando el tipo de cambio de hoy'); };
 $('logoutBtn').onclick = async () => { await sb.auth.signOut(); };
 
 $('loginForm').onsubmit = async e => {

@@ -31,7 +31,7 @@
   --k-tramite-ink: #2348b8; --k-compra-ink: #c2341c; --k-reserva-ink: #18864a; --k-llamada-ink: #c23a77; --k-dinero-ink: #9a6400; --k-otro-ink: #7b4bc4;
   --k-tramite-on: #fff; --k-compra-on: #fff; --k-reserva-on: #fff; --k-llamada-on: #fff; --k-dinero-on: #fff; --k-otro-on: #fff;
   --hero: #2348b8; --hero-ink: #fff8ef; --hero-title: #f4ef4a; --hero-shadow: #e0442a; --deco1: #e0442a; --deco2: #18864a; --deco3: #e9609a; --deco4: #f2b129;
-  --badge: #f2b129; --badge-ink: #1c2142; --accent-ink: #ffffff; --accent-text: #c2341c; --head: #2348b8; --frame: #f2b129; --frame-shadow: #18864a;
+  --badge: #f2b129; --badge-ink: #1c2142; --accent-ink: #ffffff; --accent-text: #c2341c; --head: #2348b8; --frame: #f2b129; --frame-shadow: #18864a; --frame-ink: #1c2142;
   --tomato-ink: #c2341c; --pink-ink: #c23a77; --mustard-ink: #9a6400;
   --on-poster: #fff8ef;
   --ok: #1d7a4f; --ok-soft: #dff2e6;
@@ -101,19 +101,24 @@ button { cursor: pointer }
 
 /* Budget */
 .card { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--line); padding: 16px }
-.budget { border: 3px solid var(--frame); box-shadow: 6px 6px 0 var(--frame-shadow); margin-right: 6px }
-.budget h2 { font-family: var(--fun); font-weight: 400; font-size: 22px; margin-bottom: 12px; color: var(--head) }
-.btable { display: grid; grid-template-columns: 1fr auto auto; gap: 8px 16px; align-items: center }
-.btable .h { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); text-align: right; font-weight: 600 }
-.btable .r { text-align: right }
-.btable .row-l { color: var(--muted) }
-.btable input { width: 100px; text-align: right; border: 1px solid var(--line); background: var(--tint); border-radius: 8px; padding: 5px 8px }
-.btable .falta { font-weight: 700; font-size: 17px }
-.btable .sep { grid-column: 1 / -1; height: 1px; background: var(--line) }
-.falta.bad { color: var(--bad) } .falta.good { color: var(--ok) }
-.combined { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center }
-.combined input { width: 64px; border: 1px solid var(--line); background: var(--tint); border-radius: 8px; padding: 3px 6px; text-align: right }
-.combined strong { color: var(--ink) }
+.budget { background: var(--frame); color: var(--frame-ink); border: 0; box-shadow: 6px 6px 0 var(--frame-shadow); margin-right: 6px;
+  --fm: color-mix(in srgb, var(--frame-ink) 72%, var(--frame)); --fl: color-mix(in srgb, var(--frame-ink) 22%, var(--frame)) }
+.budget h2 { font-family: var(--fun); font-weight: 400; font-size: 22px; margin-bottom: 12px; color: var(--frame-ink) }
+.bt { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 9px 16px; align-items: center }
+.bt > span:not(.l):not(.sep) { text-align: right; font-weight: 600 }
+.bt .h { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--fm); font-weight: 700 !important }
+.bt .l { color: var(--fm) }
+.bt .l b { color: var(--frame-ink) }
+.bt .sep { grid-column: 1 / -1; height: 2px; background: var(--fl) }
+.bt .gap { justify-self: end; background: #ffffff; border-radius: 8px; padding: 3px 9px; font-weight: 800 !important; font-size: 16px }
+.gap.bad { color: var(--bad) } .gap.good { color: var(--ok) }
+.savedin { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px }
+.savedin .label { color: var(--fm) }
+.savedin input { border: 0; background: #ffffff; color: var(--ink); border-radius: 10px; padding: 9px 10px; text-align: right; width: 100%; min-width: 0 }
+.ratebox { margin-top: 12px; padding-top: 12px; border-top: 2px dashed var(--fl); font-size: 13px; color: var(--fm); display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center }
+.ratebox b { color: var(--frame-ink) }
+.ratebox input { width: 84px; border: 0; background: #ffffff; color: var(--ink); border-radius: 8px; padding: 4px 8px; text-align: right }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--frame-ink); font-weight: 700; text-decoration: underline; font-size: 13px }
 
 
 /* Charts */
@@ -358,19 +363,22 @@ html { color-scheme: light } body { margin: 0 }
     <aside class="side">
   <section class="card budget">
     <h2>Presupuesto</h2>
-    <div class="btable num">
+    <div class="bt num">
       <span></span><span class="h">Soles</span><span class="h">Dólares</span>
-      <span class="row-l">Necesitas (pendiente)</span><span class="r" id="needPEN">–</span><span class="r" id="needUSD">–</span>
-      <span class="row-l">Ya pagado</span><span class="r" id="paidPEN">–</span><span class="r" id="paidUSD">–</span>
-      <span class="row-l">Tienes ahorrado</span>
-      <span class="r"><input id="savedPEN" inputmode="decimal" aria-label="Ahorrado en soles" placeholder="0"></span>
-      <span class="r"><input id="savedUSD" inputmode="decimal" aria-label="Ahorrado en dólares" placeholder="0"></span>
+      <span class="l">Necesitas (pendiente)</span><span id="needPEN">–</span><span id="needUSD">–</span>
+      <span class="l">Ya pagado</span><span id="paidPEN">–</span><span id="paidUSD">–</span>
+      <span class="l">Tienes ahorrado</span><span id="savedTotPEN">–</span><span id="savedTotUSD">–</span>
       <span class="sep"></span>
-      <span class="row-l"><b>Te falta</b></span><span class="r falta" id="gapPEN">–</span><span class="r falta" id="gapUSD">–</span>
+      <span class="l"><b id="gapLabel">Te falta</b></span><span id="gapPEN" class="gap">–</span><span id="gapUSD" class="gap">–</span>
     </div>
-    <div class="combined">
-      <span>Tipo de cambio: S/ <input id="rate" inputmode="decimal" aria-label="Soles por dólar"> por US$1</span>
-      <span id="combined"></span>
+    <div class="savedin">
+      <label class="field"><span class="label">Ahorrado en soles</span><input id="savedPEN" class="num" inputmode="decimal" placeholder="S/ 0"></label>
+      <label class="field"><span class="label">Ahorrado en dólares</span><input id="savedUSD" class="num" inputmode="decimal" placeholder="US$ 0"></label>
+    </div>
+    <div class="ratebox">
+      <span>Tipo de cambio: <b id="rateShow" class="num">S/ 3.75</b> por US$1 · <span id="rateSrc"></span></span>
+      <button type="button" class="linkbtn" id="rateEdit">Cambiar</button>
+      <span id="rateEditor" hidden><input id="rate" class="num" inputmode="decimal" aria-label="Soles por dólar"> <button type="button" class="linkbtn" id="rateAuto" hidden>Usar el de hoy</button></span>
     </div>
   </section>
 
