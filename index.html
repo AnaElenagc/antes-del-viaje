@@ -142,10 +142,18 @@ button { cursor: pointer }
 .chart-empty { color: var(--muted); font-size: 13.5px; padding: 10px 0 }
 
 /* Category tints */
-.task[class*="c-"] { background: color-mix(in srgb, var(--c) 9%, #ffffff); border-color: color-mix(in srgb, var(--c) 28%, #ffffff); border-left-color: var(--c) }
-.task[class*="c-"] .check { background: #ffffff; border-color: color-mix(in srgb, var(--c) 70%, var(--ink)) }
-.task.done .check { background: var(--ok); border-color: var(--ok) }
-.task[class*="c-"]:hover { background: color-mix(in srgb, var(--c) 14%, #ffffff) }
+.task[class*="c-"] { background: var(--c); color: var(--on-c); border-color: transparent; border-left-color: color-mix(in srgb, var(--c) 65%, #000000);
+  --tm: color-mix(in srgb, var(--on-c) 80%, var(--c)) }
+.task[class*="c-"] .cat { color: var(--on-c); opacity: .85 }
+.task[class*="c-"] .meta, .task[class*="c-"] .amt small { color: var(--tm) }
+.task[class*="c-"] .gcal { color: var(--on-c); text-decoration: underline; text-underline-offset: 2px }
+.task[class*="c-"] .check { background: #ffffff; border-color: #ffffff }
+.task[class*="c-"] .pill { background: #ffffff }
+.task.done .check { background: var(--ok); border-color: #ffffff }
+.task[class*="c-"]:hover { filter: brightness(1.05) }
+.task[class*="c-"] .subs, .task[class*="c-"] .subs input, .task[class*="c-"] .subtoggle { color: var(--ink) }
+.task[class*="c-"] .subs .subsum { color: var(--muted) }
+.task[class*="c-"] .amt.over { color: var(--on-c); text-decoration: underline wavy }
 .chip[class*="c-"], .chip[class*="g-"] { background: color-mix(in srgb, var(--c) 10%, #ffffff); border-color: color-mix(in srgb, var(--c) 30%, #ffffff) }
 .chip[class*="c-"][aria-pressed="true"], .chip[class*="g-"][aria-pressed="true"] { background: var(--c); border-color: var(--c); color: var(--on-c) }
 .chip[class*="c-"][aria-pressed="true"]::before, .chip[class*="g-"][aria-pressed="true"]::before { background: var(--on-c) }
