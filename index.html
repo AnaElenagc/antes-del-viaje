@@ -14,6 +14,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap">
 <style>
+/* Flag emojis for Windows, which has none (Twemoji, CC-BY 4.0). Only used for flag characters. */
+@font-face { font-family: "Twemoji Country Flags"; unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E0063, U+E0065, U+E0067, U+E006C, U+E006E, U+E0073-E0074, U+E0077, U+E007F; src: url("/TwemojiCountryFlags.woff2") format("woff2"); font-display: swap }
 /* Layout: one mobile column (max 640px) — eclectic "poster" header, framed budget card, alerts, task list with a color per category, sheet for editing. */
 :root {
   --bg: #ffffff;
@@ -36,9 +38,9 @@
   --warn: #9a5b00; --warn-soft: #fdefcf;
   --bad: #b3261e; --bad-soft: #fde0dc;
   --shadow: 0 1px 2px rgba(60,30,20,.05), 0 6px 20px rgba(60,30,20,.06);
-  --fun: "Shrikhand", "Bricolage Grotesque", Georgia, serif;
-  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fun: "Twemoji Country Flags", "Shrikhand", "Bricolage Grotesque", Georgia, serif;
+  --display: "Twemoji Country Flags", "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Twemoji Country Flags", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: light;
 }
 .c-tramite { --c: var(--k-tramite); --ci: var(--k-tramite-ink); --on-c: var(--k-tramite-on) }
@@ -229,9 +231,11 @@ button { cursor: pointer }
 
 @media (max-width: 600px) { .top { flex-wrap: wrap } .top select { flex: 1 1 100% } .top .iconbtn { flex: 1 1 auto } }
 
-.hero h1 .emo { text-shadow: none; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: .85em }
+.hero h1 .emo { text-shadow: none; font-family: "Twemoji Country Flags", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: .85em }
 .emojis { display: flex; flex-wrap: wrap; gap: 4px; margin-top: -4px }
-.emojis button { border: 1px solid var(--line); background: var(--tint); border-radius: 8px; font-size: 18px; line-height: 1; padding: 5px 6px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif }
+.emojis button { border: 1px solid var(--line); background: var(--tint); border-radius: 8px; font-size: 18px; line-height: 1; padding: 5px 6px; font-family: "Twemoji Country Flags", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif }
+.emojis .flagtoggle { font-family: var(--body); font-size: 13px; font-weight: 600; padding: 5px 10px }
+.emojis .flags { display: flex; flex-wrap: wrap; gap: 4px; width: 100% }
 .emojis button:hover { background: var(--surface); border-color: var(--ink) }
 
 /* Alerts */

@@ -565,15 +565,16 @@ function field(label, input, hint) {
   if (hint) { const s = document.createElement('small'); s.textContent = hint; w.append(s); }
   return w;
 }
-const EMOJI_RE = /(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}|\uFE0F\u200D\p{Extended_Pictographic})*\uFE0F?)/u;
+const EMOJI_RE = /(\p{Regional_Indicator}{2}|\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}|\uFE0F\u200D\p{Extended_Pictographic})*\uFE0F?)/u;
 // text with emojis wrapped so the title shadow skips them
 function setWithEmoji(el, text) {
   el.replaceChildren(...text.split(EMOJI_RE).filter(Boolean).map(part => EMOJI_RE.test(part) ? mk('span', { className: 'emo', textContent: part }) : document.createTextNode(part)));
 }
 const QUICK_EMOJI = ['✈️','🧳','🏖️','🏔️','🛂','🏨','🎁','💊','👗','🍫','💵','📞','📝','🎉','🏠','🚗','❤️','⭐'];
+const FLAGS = ['🇵🇪','🇦🇷','🇧🇷','🇨🇱','🇨🇴','🇲🇽','🇧🇴','🇪🇨','🇺🇾','🇵🇾','🇻🇪','🇨🇷','🇵🇦','🇨🇺','🇩🇴','🇬🇹','🇭🇳','🇸🇻','🇳🇮','🇵🇷','🇺🇸','🇨🇦','🇪🇸','🇫🇷','🇮🇹','🇵🇹','🇩🇪','🇬🇧','🇯🇵','🇰🇷'];
 function emojiRow(input) {
   const row = mk('div', { className: 'emojis' });
-  for (const e of QUICK_EMOJI) {
+  const addBtn = (e, host) => {
     const b = mk('button', { type: 'button', textContent: e }); b.setAttribute('aria-label', 'Agregar ' + e);
     b.onclick = () => {
       const a = input.selectionStart ?? input.value.length, z = input.selectionEnd ?? a;
@@ -583,8 +584,15 @@ function emojiRow(input) {
       const pos = (before + ins).length; input.setSelectionRange(pos, pos);
       input.dispatchEvent(new Event('input'));
     };
-    row.append(b);
-  }
+    host.append(b);
+  };
+  for (const e of QUICK_EMOJI) addBtn(e, row);
+  const flags = mk('div', { className: 'flags', hidden: true });
+  for (const f of FLAGS) addBtn(f, flags);
+  const tog = mk('button', { type: 'button', className: 'flagtoggle', textContent: '🇵🇪 Banderas ▾' });
+  tog.setAttribute('aria-expanded', 'false');
+  tog.onclick = () => { flags.hidden = !flags.hidden; tog.setAttribute('aria-expanded', String(!flags.hidden)); tog.textContent = '🇵🇪 Banderas ' + (flags.hidden ? '▾' : '▴'); };
+  row.append(tog, flags);
   return row;
 }
 function mk(tag, props) { const e = document.createElement(tag); Object.assign(e, props); return e; }

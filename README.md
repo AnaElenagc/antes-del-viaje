@@ -13,3 +13,6 @@ y recordatorios para Google Calendar o el calendario del iPhone (.ics).
 - `app.js`: lógica de la app
 - `supabase.js`: cliente de Supabase (v2.45.4)
 - `manifest.webmanifest`, `icon*.png`, `icon.svg`: para instalarla como app
+
+## Créditos
+- Banderas: fuente "Twemoji Country Flags" de [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (código MIT), con gráficos de [Twemoji](https://github.com/jdecked/twemoji) bajo licencia CC-BY 4.0.
