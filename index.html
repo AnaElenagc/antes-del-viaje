@@ -151,6 +151,14 @@ button { cursor: pointer }
 .task[class*="c-"] .pill { background: #ffffff }
 .task.done .check { background: var(--ok); border-color: #ffffff }
 .task[class*="c-"]:hover { filter: brightness(1.05) }
+.task.c-tramite { --p1: var(--k-tramite-p1); --p1-on: var(--k-tramite-p1-on); --p2: var(--k-tramite-p2); --p2-on: var(--k-tramite-p2-on) }
+.task.c-compra { --p1: var(--k-compra-p1); --p1-on: var(--k-compra-p1-on); --p2: var(--k-compra-p2); --p2-on: var(--k-compra-p2-on) }
+.task.c-reserva { --p1: var(--k-reserva-p1); --p1-on: var(--k-reserva-p1-on); --p2: var(--k-reserva-p2); --p2-on: var(--k-reserva-p2-on) }
+.task.c-llamada { --p1: var(--k-llamada-p1); --p1-on: var(--k-llamada-p1-on); --p2: var(--k-llamada-p2); --p2-on: var(--k-llamada-p2-on) }
+.task.c-dinero { --p1: var(--k-dinero-p1); --p1-on: var(--k-dinero-p1-on); --p2: var(--k-dinero-p2); --p2-on: var(--k-dinero-p2-on) }
+.task.c-otro { --p1: var(--k-otro-p1); --p1-on: var(--k-otro-p1-on); --p2: var(--k-otro-p2); --p2-on: var(--k-otro-p2-on) }
+.task[class*="c-"] .ttl { display: inline-block; background: var(--p1, transparent); color: var(--p1-on, inherit); padding: 3px 12px; border-radius: 99px; margin: 3px 0 2px; box-shadow: 2px 2px 0 color-mix(in srgb, var(--c) 60%, #000000) }
+.task[class*="c-"].pv2 .ttl { background: var(--p2, var(--p1)); color: var(--p2-on, var(--p1-on)) }
 .task[class*="c-"] .subs, .task[class*="c-"] .subs input, .task[class*="c-"] .subtoggle { color: var(--ink) }
 .task[class*="c-"] .subs .subsum { color: var(--muted) }
 .task[class*="c-"] .amt.over { color: var(--on-c); text-decoration: underline wavy }

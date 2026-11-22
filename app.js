@@ -21,11 +21,14 @@ const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','set','oct','nov
 const INK = '#1c2142';
 const PALETTES = [
   { id: 'noche', name: 'La noche', cats: { tramite: '#242a63', compra: '#384a94', reserva: '#92aed1', llamada: '#e9e987', dinero: '#f8c923', otro: '#181c23' },
-    hero: '#181c23', heroTitle: '#f8c923', heroShadow: '#384a94', deco: ['#e9e987', '#92aed1', '#384a94', '#f8c923'], badge: '#f8c923', accent: '#384a94', frame: '#f8c923', frameShadow: '#242a63' },
+    hero: '#181c23', heroTitle: '#f8c923', heroShadow: '#384a94', deco: ['#e9e987', '#92aed1', '#384a94', '#f8c923'], badge: '#f8c923', accent: '#384a94', frame: '#f8c923', frameShadow: '#242a63',
+    pairs: { tramite: ['#f8c923', '#92aed1'], compra: ['#e9e987', '#f8c923'], reserva: ['#242a63', '#f8c923'], llamada: ['#384a94', '#242a63'], dinero: ['#242a63', '#384a94'], otro: ['#92aed1', '#f8c923'] } },
   { id: 'popart', name: 'Pop art', cats: { tramite: '#3fb8b5', compra: '#e23129', reserva: '#4aad43', llamada: '#e12293', dinero: '#f0e52f', otro: '#000000' },
-    hero: '#f0e52f', heroTitle: '#000000', heroShadow: '#e12293', deco: ['#3fb8b5', '#e12293', '#4aad43', '#e23129'], badge: '#e12293', accent: '#e23129', frame: '#000000', frameShadow: '#e12293', head: '#000000' },
+    hero: '#f0e52f', heroTitle: '#000000', heroShadow: '#e12293', deco: ['#3fb8b5', '#e12293', '#4aad43', '#e23129'], badge: '#e12293', accent: '#e23129', frame: '#000000', frameShadow: '#e12293', head: '#000000',
+    pairs: { tramite: ['#f0e52f', '#e12293'], compra: ['#f0e52f', '#3fb8b5'], reserva: ['#e12293', '#f0e52f'], llamada: ['#3fb8b5', '#f0e52f'], dinero: ['#e12293', '#000000'], otro: ['#f0e52f', '#e12293'] } },
   { id: 'neutro', name: 'Neutro', cats: { tramite: '#11527d', compra: '#a03c33', reserva: '#7f97ae', llamada: '#bb966e', dinero: '#5d340d', otro: '#000000' },
-    hero: '#5d340d', heroTitle: '#bb966e', heroShadow: '#a03c33', deco: ['#a03c33', '#7f97ae', '#11527d', '#bb966e'], badge: '#7f97ae', accent: '#11527d', frame: '#bb966e', frameShadow: '#11527d' },
+    hero: '#5d340d', heroTitle: '#bb966e', heroShadow: '#a03c33', deco: ['#a03c33', '#7f97ae', '#11527d', '#bb966e'], badge: '#7f97ae', accent: '#11527d', frame: '#bb966e', frameShadow: '#11527d',
+    pairs: { tramite: ['#bb966e', '#7f97ae'], compra: ['#bb966e', '#7f97ae'], reserva: ['#5d340d', '#11527d'], llamada: ['#11527d', '#5d340d'], dinero: ['#bb966e', '#7f97ae'], otro: ['#7f97ae', '#bb966e'] } },
 ];
 const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const lum = h => { const [r, g, b] = rgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
@@ -39,6 +42,7 @@ function applyPalette(id) {
   const P = PALETTES.find(x => x.id === id) || PALETTES[0];
   paletteId = P.id;
   const st = document.documentElement.style;
+  for (const [k, pr] of Object.entries(P.pairs || {})) pr.forEach((c, i) => { st.setProperty('--k-' + k + '-p' + (i + 1), c); st.setProperty('--k-' + k + '-p' + (i + 1) + '-on', onColor(c)); });
   for (const [k, c] of Object.entries(P.cats)) { st.setProperty('--k-' + k, c); st.setProperty('--k-' + k + '-ink', textOnWhite(c)); st.setProperty('--k-' + k + '-on', onColor(c)); }
   const set = { hero: P.hero, 'hero-ink': onColor(P.hero) === '#ffffff' ? '#fff8ef' : INK, 'hero-title': P.heroTitle, 'hero-shadow': P.heroShadow,
     deco1: P.deco[0], deco2: P.deco[1], deco3: P.deco[2], deco4: P.deco[3], badge: P.badge, 'badge-ink': onColor(P.badge),
@@ -255,9 +259,11 @@ function renderList() {
     e.textContent = tasks.length ? 'No hay tareas en este filtro.' : 'Todavía no hay tareas. Toca “+ Agregar tarea” para anotar la primera.';
     host.replaceChildren(e); return;
   }
+  const seen = {};
   host.replaceChildren(...rows.map(t => {
     const s = status(t);
-    const el = document.createElement('article'); el.className = 'task c-' + (CATS.some(c => c.id === t.category) ? t.category : 'otro') + (t.done ? ' done' : '');
+    const nth = seen[t.category] = (seen[t.category] || 0) + 1;
+    const el = document.createElement('article'); el.className = 'task c-' + (CATS.some(c => c.id === t.category) ? t.category : 'otro') + (nth % 2 === 0 ? ' pv2' : '') + (t.done ? ' done' : '');
     const ck = document.createElement('button'); ck.type = 'button'; ck.className = 'check'; ck.setAttribute('aria-label', t.done ? 'Marcar como pendiente' : 'Marcar como hecha');
     ck.textContent = t.done ? '✓' : ''; ck.onclick = () => saveTask({ ...t, done: !t.done });
     const body = document.createElement('button'); body.type = 'button'; body.className = 'body'; body.onclick = () => openTask(t);
