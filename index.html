@@ -62,7 +62,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--body); font-
 .add-inline { display: none; justify-self: start }
 @media (min-width: 960px) { .fab { display: none } .add-inline { display: inline-block } }
 @media (max-width: 959px) {
-  .cols { display: flex; flex-direction: column }
+  .cols:not([hidden]) { display: flex; flex-direction: column }
   .side { display: contents }
   .budget { order: 0 } .main { order: 1 } .charts { order: 2 } .tools { order: 3 }
 }
@@ -139,11 +139,11 @@ button { cursor: pointer }
 .task[class*="c-"] .check { background: #ffffff; border-color: color-mix(in srgb, var(--c) 70%, var(--ink)) }
 .task.done .check { background: var(--ok); border-color: var(--ok) }
 .task[class*="c-"]:hover { background: color-mix(in srgb, var(--c) 14%, #ffffff) }
-.chip[class*="c-"] { background: color-mix(in srgb, var(--c) 10%, #ffffff); border-color: color-mix(in srgb, var(--c) 30%, #ffffff) }
-.chip[class*="c-"][aria-pressed="true"] { background: var(--c); border-color: var(--c); color: var(--on-c) }
-.chip[class*="c-"][aria-pressed="true"]::before { background: var(--on-c) }
-.chip:not([class*="c-"]) { background: var(--tint) }
-.chip:not([class*="c-"])[aria-pressed="true"] { background: var(--ink) }
+.chip[class*="c-"], .chip[class*="g-"] { background: color-mix(in srgb, var(--c) 10%, #ffffff); border-color: color-mix(in srgb, var(--c) 30%, #ffffff) }
+.chip[class*="c-"][aria-pressed="true"], .chip[class*="g-"][aria-pressed="true"] { background: var(--c); border-color: var(--c); color: var(--on-c) }
+.chip[class*="c-"][aria-pressed="true"]::before, .chip[class*="g-"][aria-pressed="true"]::before { background: var(--on-c) }
+.chip:not([class*="c-"]):not([class*="g-"]) { background: var(--tint) }
+.chip:not([class*="c-"]):not([class*="g-"])[aria-pressed="true"] { background: var(--ink) }
 
 
 /* Checklist inside a task */
@@ -174,6 +174,54 @@ button { cursor: pointer }
 .pal span { font-size: 12.5px; font-weight: 600; margin-left: 6px; margin-right: 2px }
 .pal[aria-pressed="true"] { border-color: var(--ink) }
 
+
+/* Tabs and action bar */
+.tabs { display: flex; gap: 6px; background: var(--tint); border: 1px solid var(--line); border-radius: 14px; padding: 4px; justify-self: start; max-width: 100% }
+.tabs button { border: 0; background: transparent; padding: 9px 16px; border-radius: 10px; font-weight: 600; color: var(--muted); white-space: nowrap }
+.tabs button[aria-selected="true"] { background: var(--hero); color: var(--hero-ink) }
+.actionsbar { display: none; gap: 10px }
+.btn.primary.alt { background: var(--k-reserva); color: var(--k-reserva-on) }
+@media (min-width: 960px) { .actionsbar { display: flex } }
+
+/* Expenses */
+.g-alimentacion { --c: var(--k-compra); --ci: var(--k-compra-ink); --on-c: var(--k-compra-on) }
+.g-movilidad { --c: var(--k-tramite); --ci: var(--k-tramite-ink); --on-c: var(--k-tramite-on) }
+.g-pasajes { --c: var(--k-reserva); --ci: var(--k-reserva-ink); --on-c: var(--k-reserva-on) }
+.g-souvenirs { --c: var(--k-llamada); --ci: var(--k-llamada-ink); --on-c: var(--k-llamada-on) }
+.g-diversion { --c: var(--k-dinero); --ci: var(--k-dinero-ink); --on-c: var(--k-dinero-on) }
+.g-alojamiento { --c: var(--k-otro); --ci: var(--k-otro-ink); --on-c: var(--k-otro-on) }
+.g-otros { --c: #8a8496; --ci: #5f5a6b; --on-c: #ffffff }
+.gastos-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px }
+.gastos-head h2 { font-family: var(--fun); font-weight: 400; font-size: 22px; color: var(--head) }
+.gastos-head span { color: var(--muted); font-size: 14px }
+.rate-note { font-size: 12.5px; color: var(--muted) }
+.day { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 10px 2px 2px }
+.gasto { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; width: 100%; text-align: left; border: 1px solid color-mix(in srgb, var(--c) 28%, #ffffff); border-left: 6px solid var(--c); background: color-mix(in srgb, var(--c) 8%, #ffffff); border-radius: 12px; padding: 10px 12px }
+.gasto .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); grid-column: 1; grid-row: 1 / span 2 }
+.gasto .d { font-weight: 600; overflow-wrap: anywhere; grid-column: 2; grid-row: 1; min-width: 0 }
+.gasto .m { font-size: 12.5px; color: var(--muted); grid-column: 2; grid-row: 2 }
+.gasto .m b { color: var(--ci); font-weight: 600 }
+.gasto .v { text-align: right; font-weight: 700; grid-column: 3; grid-row: 1 / span 2 }
+.gasto .v small { display: block; font-weight: 500; font-size: 11.5px; color: var(--muted) }
+
+/* Bolsa */
+.bolsa { border: 3px solid var(--frame); box-shadow: 6px 6px 0 var(--frame-shadow); margin-right: 6px; order: 0 }
+.bolsa h2 { font-family: var(--fun); font-weight: 400; font-size: 22px; color: var(--head); margin-bottom: 8px }
+.bolsa-big { font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1.1 }
+.bolsa-big.over { color: var(--bad) }
+.bolsa-sub { color: var(--muted); font-size: 13.5px; margin: 2px 0 10px }
+.prow { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 4px 10px; align-items: center; padding: 10px 0; border-top: 1px dashed var(--line) }
+.prow .pn { font-weight: 600; font-size: 14px }
+.prow .pn::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 3px; background: var(--c); margin-right: 7px }
+.prow input { width: 100%; text-align: right; border: 1px solid var(--line); background: var(--tint); border-radius: 8px; padding: 5px 8px }
+.prow .pbar { grid-column: 1 / -1; height: 8px; background: var(--tint); border: 1px solid var(--line); border-radius: 99px; overflow: hidden }
+.prow .pbar i { display: block; height: 100%; background: var(--c); border-radius: 0 4px 4px 0 }
+.prow .pbar.over i { background: var(--bad) }
+.prow .ps { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted) }
+.prow .ps.over { color: var(--bad); font-weight: 600 }
+.detect { font-size: 12px; color: var(--muted) }
+.preview { font-size: 13px; color: var(--muted) }
+
 /* Alerts */
 .alerts { display: grid; gap: 8px }
 .alert { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; font-size: 14px; border: 0; text-align: left; width: 100% }
@@ -185,7 +233,7 @@ button { cursor: pointer }
 .filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none }
 .chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 6px 12px; font-size: 13px; white-space: nowrap }
 .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
-.chip[class*="c-"]::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 6px; vertical-align: 1px }
+.chip[class*="c-"]::before, .chip[class*="g-"]::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 6px; vertical-align: 1px }
 
 /* Tasks */
 .list { display: grid; gap: 8px }
@@ -272,9 +320,17 @@ html { color-scheme: light } body { margin: 0 }
   <div id="notice" class="notice" hidden></div>
   <div class="alerts" id="alerts"></div>
 
-  <div class="cols">
+  <div class="tabs" role="tablist" aria-label="Etapa">
+    <button type="button" role="tab" id="tabAntes" aria-selected="true">Antes del viaje</button>
+    <button type="button" role="tab" id="tabDurante" aria-selected="false">Durante el viaje</button>
+  </div>
+  <div class="actionsbar">
+    <button class="btn primary" id="addBtn2" type="button" hidden>+ Agregar tarea</button>
+    <button class="btn primary alt" id="addGastoBtn2" type="button" hidden>+ Agregar gasto</button>
+  </div>
+
+  <div class="cols" id="viewAntes">
     <main class="main">
-      <button class="btn primary add-inline" id="addBtn2" type="button" hidden>+ Agregar tarea</button>
       <div class="filters" id="filters"></div>
       <div class="list" id="list"></div>
     </main>
@@ -307,6 +363,21 @@ html { color-scheme: light } body { margin: 0 }
   <div class="tools">
     <button class="iconbtn" id="icsBtn" type="button">Descargar todo para el calendario (.ics)</button>
   </div>
+    </aside>
+  </div>
+
+  <div class="cols" id="viewDurante" hidden>
+    <main class="main">
+      <div class="gastos-head"><h2>Gastos</h2><span id="gastosTotal" class="num"></span></div>
+      <div id="rateNote" class="rate-note"></div>
+      <div class="list" id="gastosList"></div>
+    </main>
+    <aside class="side">
+      <section class="card bolsa" aria-labelledby="bolsaTitle">
+        <h2 id="bolsaTitle">Bolsa de viaje</h2>
+        <div id="bolsaTop"></div>
+        <div id="bolsaRows"></div>
+      </section>
     </aside>
   </div>
 </div>

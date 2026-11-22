@@ -63,6 +63,56 @@ function renderPalettes() {
 try { applyPalette(localStorage.getItem('palette') || 'noche'); } catch { applyPalette('noche'); }
 
 let user = null, plans = [], planId = null, tasks = [], filter = 'pend';
+let expenses = [], tab = 'antes';
+try { tab = localStorage.getItem('tab') === 'durante' ? 'durante' : 'antes'; } catch {}
+
+// ---------- expenses: partidas, auto-detection, currencies ----------
+const GCATS = [
+  { id: 'alimentacion', label: 'Alimentación', words: ['comida','comer','almuerzo','desayuno','cena','lonche','merienda','postre','helado','cafe','milanesa','chocolate','pizza','hamburguesa','empanada','restaurante','restaurant','menu','bebida','agua','gaseosa','jugo','cerveza','vino','trago','snack','galleta','pan','fruta','supermercado','super','mercado','asado','parrilla','sandwich','sanguche','taco','arepa','choripan','alfajor','dulce','torta','pastel','medialuna','pollo','carne','pescado','ceviche','sushi','pasta','ensalada','sopa','te','mate','yogur','queso','facturas','chipa','tamal','pupusa','brigadeiro','acai','cafeteria','bar de comida'] },
+  { id: 'movilidad', label: 'Movilidad', words: ['taxi','uber','cabify','didi','indriver','bus','micro','colectivo','metro','subte','tren','combi','movilidad','transporte','gasolina','nafta','combustible','estacionamiento','parqueo','peaje','bicicleta','bici','remis','tranvia','teleferico','scooter','moto','tarjeta sube','recarga'] },
+  { id: 'pasajes', label: 'Pasajes', words: ['vuelo','avion','pasaje','boleto','aerolinea','equipaje','maleta extra','tasa','aeropuerto','ferry','bus interprovincial','check in'] },
+  { id: 'souvenirs', label: 'Souvenirs y regalos', words: ['souvenir','suvenir','recuerdo','regalo','llavero','iman','polo','camiseta','remera','artesania','peluche','postal','taza','tienda','compra','ropa','perfume','joya','pulsera','collar','gorra','sombrero','libro'] },
+  { id: 'diversion', label: 'Diversión y paseos', words: ['entrada','museo','tour','paseo','excursion','cine','concierto','parque','discoteca','boliche','fiesta','show','teatro','zoologico','zoo','juego','playa','spa','bar','karaoke','partido','estadio','city tour','guia'] },
+  { id: 'alojamiento', label: 'Alojamiento', words: ['hotel','hostal','hostel','airbnb','hospedaje','alojamiento','posada','noche de hotel','departamento'] },
+  { id: 'otros', label: 'Otros', words: [] },
+];
+const gcatLabel = id => (GCATS.find(c => c.id === id) || GCATS[6]).label;
+const norm = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function detectCategory(text) {
+  const t = ' ' + norm(text).replace(/[^a-z0-9ñ ]/g, ' ') + ' ';
+  let best = null, bestLen = 0;
+  for (const c of GCATS) for (const w of c.words) {
+    const hit = w.length <= 4 ? t.includes(' ' + w + ' ') || t.includes(' ' + w + 's ') : t.includes(w);
+    if (hit && w.length > bestLen) { best = c.id; bestLen = w.length; }
+  }
+  return best;
+}
+const CURRENCIES = [
+  ['PEN', 'Sol peruano', 'S/'], ['USD', 'Dólar', 'US$'], ['ARS', 'Peso argentino', 'AR$'], ['BOB', 'Boliviano', 'Bs'],
+  ['BRL', 'Real brasileño', 'R$'], ['CLP', 'Peso chileno', 'CL$'], ['COP', 'Peso colombiano', 'CO$'], ['CRC', 'Colón costarricense', '₡'],
+  ['CUP', 'Peso cubano', 'CU$'], ['DOP', 'Peso dominicano', 'RD$'], ['GTQ', 'Quetzal', 'Q'], ['HNL', 'Lempira', 'L'],
+  ['MXN', 'Peso mexicano', 'MX$'], ['NIO', 'Córdoba', 'C$'], ['PAB', 'Balboa', 'B/.'], ['PYG', 'Guaraní', '₲'],
+  ['UYU', 'Peso uruguayo', '$U'], ['VES', 'Bolívar', 'Bs.S'],
+];
+const curSym = c => (CURRENCIES.find(x => x[0] === c) || [c, c, c])[2];
+const fmtCur = (v, c) => curSym(c) + ' ' + new Intl.NumberFormat('es-PE', { maximumFractionDigits: 2 }).format(v);
+let rates = null, ratesDate = '';   // units of each currency per 1 sol
+async function loadRates() {
+  try { const c = JSON.parse(localStorage.getItem('rates') || 'null'); if (c && c.day === todayStr()) { rates = c.rates; ratesDate = c.date; return; } if (c) { rates = c.rates; ratesDate = c.date; } } catch {}
+  const sources = [
+    async () => { const r = await fetch('https://open.er-api.com/v6/latest/PEN'); const j = await r.json(); if (j.result !== 'success') throw 0; return { rates: j.rates, date: (j.time_last_update_utc || '').slice(5, 16) }; },
+    async () => { const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/pen.json'); const j = await r.json(); const out = {}; for (const [k, v] of Object.entries(j.pen)) out[k.toUpperCase()] = v; return { rates: out, date: j.date }; },
+  ];
+  for (const src of sources) {
+    try { const r = await src(); rates = r.rates; ratesDate = r.date; try { localStorage.setItem('rates', JSON.stringify({ day: todayStr(), rates, date: ratesDate })); } catch {} return; } catch {}
+  }
+}
+function toPEN(amount, cur) {
+  if (cur === 'PEN') return amount;
+  if (rates && rates[cur]) return amount / rates[cur];
+  const p = plan(); if (cur === 'USD' && p && num(p.rate)) return amount * num(p.rate);
+  return null;
+}
 let subs = {};            // task id -> list of subtasks
 const open = new Set();   // tasks whose checklist is expanded
 try { JSON.parse(localStorage.getItem('openLists') || '[]').forEach(id => open.add(id)); } catch {}
@@ -80,7 +130,7 @@ function money(t) {
 }
 
 // ---------- mapping between database rows and app objects ----------
-const fromPlan = r => ({ id: r.id, name: r.name, date: r.date || '', rate: r.rate, savedPEN: r.saved_pen, savedUSD: r.saved_usd, createdAt: r.created_at, palette: r.palette || 'noche' });
+const fromPlan = r => ({ id: r.id, name: r.name, date: r.date || '', rate: r.rate, savedPEN: r.saved_pen, savedUSD: r.saved_usd, createdAt: r.created_at, palette: r.palette || 'noche', pocket: r.pocket || {} });
 const fromTask = r => ({ id: r.id, title: r.title, category: r.category, idealDate: r.ideal_date || '', deadline: r.deadline || '', amount: r.amount ?? '', currency: r.currency, notes: r.notes || '', done: r.done, hasList: !!r.has_list });
 const toTask = t => ({ title: t.title, category: t.category, ideal_date: t.idealDate || null, deadline: t.deadline || null, amount: t.amount === '' || t.amount == null ? null : num(t.amount), currency: t.currency, notes: t.notes || '', done: !!t.done, has_list: !!t.hasList, updated_at: new Date().toISOString() });
 
@@ -327,7 +377,170 @@ function renderProgress() {
   $('progTxt').textContent = tasks.length ? done + ' de ' + tasks.length + ' tareas listas' : '';
 }
 
-function render() { renderPlans(); renderHeader(); renderBudget(); renderCharts(); renderAlerts(); renderProgress(); renderList(); $('addBtn').hidden = !plan(); $('addBtn2').hidden = !plan(); $('editPlanBtn').hidden = !plan(); }
+function render() { renderPlans(); renderHeader(); renderBudget(); renderCharts(); renderAlerts(); renderProgress(); renderList(); renderTabs(); renderDurante(); $('addBtn').hidden = !plan(); $('addBtn2').hidden = !plan(); $('addGastoBtn2').hidden = !plan(); $('editPlanBtn').hidden = !plan(); }
+
+function renderTabs() {
+  $('tabAntes').setAttribute('aria-selected', String(tab === 'antes'));
+  $('tabDurante').setAttribute('aria-selected', String(tab === 'durante'));
+  $('viewAntes').hidden = tab !== 'antes'; $('viewDurante').hidden = tab !== 'durante';
+  $('addBtn').textContent = tab === 'durante' ? '+ Agregar gasto' : '+ Agregar tarea';
+}
+function setTab(t) { tab = t; try { localStorage.setItem('tab', t); } catch {} renderTabs(); }
+
+function dayLabel(d) {
+  const diff = diffDays(d, todayStr());
+  return (diff === 0 ? 'Hoy · ' : diff === 1 ? 'Ayer · ' : '') + fmtDate(d);
+}
+function renderDurante() {
+  const p = plan(); if (!p) return;
+  const total = expenses.reduce((a, e) => a + e.amountPEN, 0);
+  $('gastosTotal').textContent = expenses.length ? expenses.length + (expenses.length === 1 ? ' gasto · ' : ' gastos · ') + fmtPEN.format(total) : '';
+  $('rateNote').textContent = rates ? 'Tipo de cambio actualizado' + (ratesDate ? ' (' + ratesDate + ')' : '') + '. Todo se convierte a soles.' : 'Sin tipo de cambio automático por ahora. Los dólares usan tu tipo de cambio del presupuesto.';
+  const host = $('gastosList');
+  if (!expenses.length) {
+    host.replaceChildren(mk('div', { className: 'empty', textContent: 'Aún no hay gastos. Cuando estés de viaje, toca “+ Agregar gasto” y escribe algo como “almuerzo 25” o “taxi 12”.' }));
+  } else {
+    const days = {};
+    for (const e of expenses) (days[e.spentOn] ||= []).push(e);
+    const out = [];
+    for (const d of Object.keys(days).sort().reverse()) {
+      const head = mk('div', { className: 'day' });
+      head.append(mk('span', { textContent: dayLabel(d) }), mk('span', { className: 'num', textContent: fmtPEN.format(days[d].reduce((a, e) => a + e.amountPEN, 0)) }));
+      out.push(head);
+      for (const e of days[d]) {
+        const b = mk('button', { type: 'button', className: 'gasto g-' + e.category });
+        b.onclick = () => openExpense(e);
+        const v = mk('div', { className: 'v num', textContent: fmtPEN.format(e.amountPEN) });
+        if (e.currency !== 'PEN') v.append(mk('small', { textContent: fmtCur(e.amount, e.currency) }));
+        const m = mk('div', { className: 'm' }); m.append(mk('b', { textContent: gcatLabel(e.category) }));
+        b.append(mk('span', { className: 'dot' }), mk('div', { className: 'd', textContent: e.description }), v, m);
+        out.push(b);
+      }
+    }
+    host.replaceChildren(...out);
+  }
+  // bolsa
+  const pocket = p.pocket || {};
+  const spentBy = {}; for (const e of expenses) spentBy[e.category] = (spentBy[e.category] || 0) + e.amountPEN;
+  const budgetTotal = GCATS.reduce((a, c) => a + num(pocket[c.id]), 0);
+  const left = budgetTotal - total;
+  const top = $('bolsaTop');
+  if (!budgetTotal) {
+    top.replaceChildren(mk('p', { className: 'bolsa-sub', textContent: 'Escribe cuánto tienes para cada partida. Así te voy mostrando cuánto te queda mientras gastas.' }));
+  } else {
+    const big = mk('div', { className: 'bolsa-big num' + (left < 0 ? ' over' : '') });
+    big.textContent = left >= 0 ? 'Te quedan ' + fmtPEN.format(left) : 'Te pasaste ' + fmtPEN.format(-left);
+    const sub = mk('p', { className: 'bolsa-sub num', textContent: 'Gastado ' + fmtPEN.format(total) + ' de ' + fmtPEN.format(budgetTotal) + (num(p.rate) ? ' · ≈ ' + fmtUSD.format(Math.max(left, 0) / num(p.rate)) + ' disponibles' : '') });
+    top.replaceChildren(big, sub);
+  }
+  const rowsHost = $('bolsaRows');
+  const focused = document.activeElement && document.activeElement.dataset.partida;
+  if (focused) { // don't rebuild while typing; just refresh numbers
+    for (const c of GCATS) updatePartidaRow(c, pocket, spentBy);
+    return;
+  }
+  rowsHost.replaceChildren(...GCATS.map(c => {
+    const row = mk('div', { className: 'prow g-' + c.id }); row.dataset.row = c.id;
+    const inp = mk('input', { className: 'num', inputMode: 'decimal', placeholder: 'S/ 0', value: num(pocket[c.id]) || '' });
+    inp.dataset.partida = c.id; inp.setAttribute('aria-label', 'Presupuesto para ' + c.label);
+    inp.oninput = () => patchPocket(c.id, num(inp.value));
+    const bar = mk('div', { className: 'pbar' }); bar.append(mk('i'));
+    row.append(mk('span', { className: 'pn', textContent: c.label }), inp, bar, mk('div', { className: 'ps num' }));
+    return row;
+  }));
+  for (const c of GCATS) updatePartidaRow(c, pocket, spentBy);
+}
+function updatePartidaRow(c, pocket, spentBy) {
+  const row = document.querySelector('.prow[data-row="' + c.id + '"]'); if (!row) return;
+  const b = num(pocket[c.id]), sp = spentBy[c.id] || 0, over = b > 0 ? sp > b : false;
+  const pct = b > 0 ? Math.min(sp / b, 1) : (sp > 0 ? 1 : 0);
+  row.querySelector('.pbar').classList.toggle('over', over || (!b && sp > 0));
+  row.querySelector('.pbar i').style.width = (pct * 100) + '%';
+  const ps = row.querySelector('.ps'); ps.classList.toggle('over', over);
+  ps.textContent = !b && !sp ? 'Sin gastos' : !b ? 'Gastado ' + fmtPEN.format(sp) + ' · sin presupuesto' : over ? 'Gastado ' + fmtPEN.format(sp) + ' · te pasaste ' + fmtPEN.format(sp - b) : 'Gastado ' + fmtPEN.format(sp) + ' · te quedan ' + fmtPEN.format(b - sp);
+}
+let pocketTimer;
+function patchPocket(cat, value) {
+  const p = plan(); if (!p) return;
+  p.pocket = { ...(p.pocket || {}), [cat]: value };
+  renderDurante();
+  clearTimeout(pocketTimer);
+  pocketTimer = setTimeout(async () => {
+    const { error } = await sb.from('plans').update({ pocket: p.pocket }).eq('id', p.id);
+    if (error) toast('No se pudo guardar la bolsa.');
+  }, 700);
+}
+
+function openExpense(ex) {
+  const isNew = !ex;
+  let lastCur = 'PEN'; try { lastCur = localStorage.getItem('lastCur') || 'PEN'; } catch {}
+  ex = ex || { description: '', category: '', amount: '', currency: lastCur, spentOn: todayStr() };
+  sheet(sh => {
+    const desc = mk('input', { id: 'e-desc', value: ex.description, placeholder: 'Ej: almuerzo, taxi, llavero…', autocomplete: 'off' });
+    const amt = mk('input', { id: 'e-amt', inputMode: 'decimal', value: ex.amount === '' ? '' : ex.amount, placeholder: '0' });
+    const cur = mk('select', { id: 'e-cur' });
+    for (const [code, name, sym] of CURRENCIES) cur.append(mk('option', { value: code, textContent: sym + ' · ' + name }));
+    cur.value = ex.currency;
+    const preview = mk('div', { className: 'preview num' });
+    const penManual = mk('input', { id: 'e-pen', inputMode: 'decimal', placeholder: 'S/ 0' });
+    const penWrap = field('¿Cuánto es en soles?', penManual, 'No tengo el tipo de cambio de esta moneda ahora. Escríbelo tú.'); penWrap.hidden = true;
+    let cat = ex.category || '', manual = !!ex.category;
+    const detect = mk('div', { className: 'detect' });
+    const cats = mk('div', { className: 'cats' });
+    const drawCats = () => cats.replaceChildren(...GCATS.map(c => { const b = mk('button', { type: 'button', className: 'chip g-' + c.id, textContent: c.label }); b.setAttribute('aria-pressed', String(c.id === cat)); b.onclick = () => { cat = c.id; manual = true; detect.textContent = ''; drawCats(); }; return b; }));
+    const runDetect = () => {
+      if (manual) return;
+      const d = detectCategory(desc.value);
+      cat = d || (desc.value.trim() ? 'otros' : '');
+      detect.textContent = d ? 'Lo puse en ' + gcatLabel(d) + ' automáticamente. Toca otra partida si no es.' : desc.value.trim() ? 'No reconocí la palabra: lo puse en Otros. Elige la partida si quieres.' : '';
+      drawCats();
+    };
+    const parsed = () => { const m = desc.value.match(/(\d+(?:[.,]\d+)?)/); return amt.value.trim() ? num(amt.value) : m ? num(m[1]) : 0; };
+    const runPreview = () => {
+      const a = parsed();
+      if (cur.value === 'PEN') { preview.textContent = ''; penWrap.hidden = true; return; }
+      const pen = toPEN(a || 1, cur.value);
+      if (pen == null) { preview.textContent = ''; penWrap.hidden = false; return; }
+      penWrap.hidden = true;
+      preview.textContent = a ? '≈ ' + fmtPEN.format(pen) : '1 ' + curSym(cur.value) + ' ≈ ' + fmtPEN.format(pen);
+    };
+    desc.oninput = () => { runDetect(); runPreview(); };
+    amt.oninput = runPreview; cur.onchange = runPreview;
+    drawCats(); runPreview();
+    const date = mk('input', { id: 'e-date', type: 'date', value: ex.spentOn });
+    const err = mk('div', { className: 'notice', hidden: true });
+    const d2 = mk('div', { className: 'two' }); d2.append(field('Monto', amt), field('Moneda', cur));
+    const catWrap = mk('div', { className: 'field' }); catWrap.append(mk('span', { className: 'label', textContent: 'Partida' }), cats, detect);
+    const actions = mk('div', { className: 'actions' });
+    const left = mk('div');
+    if (!isNew) { const del = mk('button', { type: 'button', className: 'btn danger', textContent: 'Eliminar' });
+      del.onclick = async () => { if (!del.dataset.sure) { del.dataset.sure = '1'; del.textContent = '¿Seguro? Toca otra vez'; return; }
+        const { error } = await sb.from('expenses').delete().eq('id', ex.id); if (error) { toast('No se pudo eliminar.'); return; }
+        expenses = expenses.filter(x => x.id !== ex.id); closeSheet(); render(); toast('Gasto eliminado'); };
+      left.append(del); }
+    const right = mk('div', { style: 'display:flex;gap:8px' });
+    right.append(mk('button', { type: 'button', className: 'btn ghost', textContent: 'Cancelar', onclick: closeSheet }), mk('button', { type: 'submit', className: 'btn primary', textContent: 'Guardar' }));
+    actions.append(left, right);
+    sh.append(mk('h2', { textContent: isNew ? 'Nuevo gasto' : 'Editar gasto' }), field('¿En qué gastaste?', desc, 'Puedes escribir el monto ahí mismo: “almuerzo 25”.'), d2, preview, penWrap, catWrap, field('Fecha', date), err, actions);
+    sh.onsubmit = async e => {
+      e.preventDefault();
+      let text = desc.value.trim(); const a = parsed();
+      if (!amt.value.trim()) text = text.replace(/(\d+(?:[.,]\d+)?)/, '').replace(/\s+/g, ' ').trim();
+      if (!text) { err.textContent = 'Escribe en qué gastaste.'; err.hidden = false; return; }
+      if (!a) { err.textContent = 'Escribe cuánto gastaste.'; err.hidden = false; return; }
+      let pen = toPEN(a, cur.value);
+      if (pen == null) { pen = num(penManual.value); if (!pen) { err.textContent = 'Escribe cuánto es en soles.'; err.hidden = false; return; } }
+      const row = { description: text, category: cat || 'otros', amount: a, currency: cur.value, amount_pen: Math.round(pen * 100) / 100, spent_on: date.value || todayStr() };
+      const res = isNew ? await sb.from('expenses').insert({ ...row, plan_id: planId }).select().single() : await sb.from('expenses').update(row).eq('id', ex.id).select().single();
+      if (res.error) { err.textContent = 'No se pudo guardar. Revisa tu conexión e inténtalo otra vez.'; err.hidden = false; return; }
+      try { localStorage.setItem('lastCur', cur.value); } catch {}
+      const r = res.data, saved = { id: r.id, description: r.description, category: r.category, amount: num(r.amount), currency: r.currency, amountPEN: num(r.amount_pen), spentOn: r.spent_on, createdAt: r.created_at };
+      expenses = isNew ? [saved, ...expenses] : expenses.map(x => x.id === saved.id ? saved : x);
+      expenses.sort((x, y) => (y.spentOn + y.createdAt).localeCompare(x.spentOn + x.createdAt));
+      closeSheet(); if (tab !== 'durante') setTab('durante'); render(); toast('Gasto guardado · ' + gcatLabel(saved.category));
+    };
+  });
+}
 
 // ---------- toast & notice ----------
 let toastT;
@@ -414,21 +627,29 @@ function openPlan(p) {
   sheet(sh => {
     const name = mk('input', { id: 'p-name', value: p.name, placeholder: 'Ej: Viaje de diciembre' });
     const date = mk('input', { id: 'p-date', type: 'date', value: p.date || '' });
+    let pal = p.palette || paletteId;
+    const pals = mk('div', { className: 'cats' });
+    const drawPals = () => pals.replaceChildren(...PALETTES.map(P => {
+      const b = mk('button', { type: 'button', className: 'pal' }); b.setAttribute('aria-pressed', String(P.id === pal));
+      for (const c of [P.hero, P.cats.compra, P.cats.reserva, P.badge]) { const i = mk('i'); i.style.background = c; b.append(i); }
+      b.append(mk('span', { textContent: P.name })); b.onclick = () => { pal = P.id; drawPals(); }; return b; }));
+    drawPals();
+    const palWrap = mk('div', { className: 'field' }); palWrap.append(mk('span', { className: 'label', textContent: 'Colores' }), pals);
     const err = mk('div', { className: 'notice', hidden: true });
     const actions = mk('div', { className: 'actions' });
     const r = mk('div', { style: 'display:flex;gap:8px' });
     r.append(mk('button', { type: 'button', className: 'btn ghost', textContent: 'Cancelar', onclick: closeSheet }), mk('button', { type: 'submit', className: 'btn primary', textContent: isNew ? 'Crear' : 'Guardar' }));
     actions.append(mk('div'), r);
-    sh.append(mk('h2', { textContent: isNew ? 'Nueva actividad' : 'Editar actividad' }), field('Nombre', name), field('Fecha del evento', date, 'El día del viaje, la mudanza, etc.'), err, actions);
+    sh.append(mk('h2', { textContent: isNew ? 'Nueva actividad' : 'Editar actividad' }), field('Nombre', name), field('Fecha del evento', date, 'El día del viaje, la mudanza, etc.'), palWrap, err, actions);
     sh.onsubmit = async e => {
       e.preventDefault();
       if (!name.value.trim()) { err.textContent = 'Ponle un nombre.'; err.hidden = false; return; }
-      const row = { name: name.value.trim(), date: date.value || null };
+      const row = { name: name.value.trim(), date: date.value || null, palette: pal };
       const res = isNew
         ? await sb.from('plans').insert(row).select().single()
         : await sb.from('plans').update(row).eq('id', p.id).select().single();
       if (res.error) { err.textContent = 'No se pudo guardar. Revisa tu conexión e inténtalo otra vez.'; err.hidden = false; return; }
-      await loadPlans(); if (isNew) await selectPlan(res.data.id);
+      await loadPlans(); if (isNew) await selectPlan(res.data.id); applyPalette(pal);
       closeSheet(); toast('Guardado');
     };
   });
@@ -446,6 +667,8 @@ async function loadTasks() {
   const { data, error } = await sb.from('tasks').select('*').eq('plan_id', planId).order('created_at');
   if (error) { showNotice('No se pudieron cargar tus tareas. Recarga la página.'); return; }
   tasks = data.map(fromTask);
+  const ex = await sb.from('expenses').select('*').eq('plan_id', planId).order('spent_on', { ascending: false });
+  expenses = ex.error ? [] : ex.data.map(r => ({ id: r.id, description: r.description, category: r.category, amount: num(r.amount), currency: r.currency, amountPEN: num(r.amount_pen), spentOn: r.spent_on, createdAt: r.created_at }));
   subs = {};
   if (tasks.length) {
     const r = await sb.from('subtasks').select('*').in('task_id', tasks.map(t => t.id)).order('created_at');
@@ -563,7 +786,11 @@ $('icsBtn').onclick = () => {
 $('planSel').onchange = e => selectPlan(e.target.value);
 $('newPlanBtn').onclick = () => openPlan(null);
 $('editPlanBtn').onclick = () => plan() && openPlan(plan());
-$('addBtn').onclick = () => openTask(null);
+$('addBtn').onclick = () => tab === 'durante' ? openExpense(null) : openTask(null);
+$('addGastoBtn2').onclick = () => openExpense(null);
+$('tabAntes').onclick = () => setTab('antes');
+$('tabDurante').onclick = () => setTab('durante');
+loadRates().then(() => { if (user) renderDurante(); });
 $('addBtn2').onclick = () => openTask(null);
 $('savedPEN').oninput = e => patchPlan({ savedPEN: num(e.target.value) });
 $('savedUSD').oninput = e => patchPlan({ savedUSD: num(e.target.value) });
