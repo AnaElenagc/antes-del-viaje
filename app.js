@@ -21,13 +21,13 @@ const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','set','oct','nov
 const INK = '#1c2142';
 const PALETTES = [
   { id: 'noche', name: 'La noche', cats: { tramite: '#242a63', compra: '#384a94', reserva: '#92aed1', llamada: '#e9e987', dinero: '#f8c923', otro: '#181c23' },
-    hero: '#181c23', heroTitle: '#f8c923', heroShadow: '#384a94', deco: ['#e9e987', '#92aed1', '#384a94', '#f8c923'], badge: '#f8c923', accent: '#384a94', frame: '#f8c923', frameShadow: '#242a63',
+    hero: '#181c23', heroTitle: '#f8c923', heroShadow: '#384a94', deco: ['#e9e987', '#92aed1', '#384a94', '#f8c923'], badge: '#f8c923', accent: '#384a94', frame: '#f8c923', frameShadow: '#242a63', fab: '#000000', fabRing: '#f8c923',
     pairs: { tramite: ['#f8c923', '#92aed1'], compra: ['#e9e987', '#f8c923'], reserva: ['#242a63', '#f8c923'], llamada: ['#384a94', '#242a63'], dinero: ['#242a63', '#384a94'], otro: ['#92aed1', '#f8c923'] } },
   { id: 'popart', name: 'Pop art', cats: { tramite: '#3fb8b5', compra: '#e23129', reserva: '#4aad43', llamada: '#e12293', dinero: '#f0e52f', otro: '#000000' },
-    hero: '#f0e52f', heroTitle: '#000000', heroShadow: '#e12293', deco: ['#3fb8b5', '#e12293', '#4aad43', '#e23129'], badge: '#e12293', accent: '#e23129', frame: '#000000', frameShadow: '#e12293', head: '#000000',
+    hero: '#f0e52f', heroTitle: '#000000', heroShadow: '#e12293', deco: ['#3fb8b5', '#e12293', '#4aad43', '#e23129'], badge: '#e12293', accent: '#e23129', frame: '#000000', frameShadow: '#e12293', head: '#000000', fab: '#000000', fabRing: '#f0e52f',
     pairs: { tramite: ['#f0e52f', '#e12293'], compra: ['#f0e52f', '#3fb8b5'], reserva: ['#e12293', '#f0e52f'], llamada: ['#3fb8b5', '#f0e52f'], dinero: ['#e12293', '#000000'], otro: ['#f0e52f', '#e12293'] } },
   { id: 'neutro', name: 'Neutro', cats: { tramite: '#11527d', compra: '#a03c33', reserva: '#7f97ae', llamada: '#bb966e', dinero: '#5d340d', otro: '#000000' },
-    hero: '#5d340d', heroTitle: '#bb966e', heroShadow: '#a03c33', deco: ['#a03c33', '#7f97ae', '#11527d', '#bb966e'], badge: '#7f97ae', accent: '#11527d', frame: '#bb966e', frameShadow: '#11527d',
+    hero: '#5d340d', heroTitle: '#bb966e', heroShadow: '#a03c33', deco: ['#a03c33', '#7f97ae', '#11527d', '#bb966e'], badge: '#7f97ae', accent: '#11527d', frame: '#bb966e', frameShadow: '#11527d', fab: '#000000', fabRing: '#bb966e',
     pairs: { tramite: ['#bb966e', '#7f97ae'], compra: ['#bb966e', '#7f97ae'], reserva: ['#5d340d', '#11527d'], llamada: ['#11527d', '#5d340d'], dinero: ['#bb966e', '#7f97ae'], otro: ['#7f97ae', '#bb966e'] } },
 ];
 const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -46,7 +46,7 @@ function applyPalette(id) {
   for (const [k, c] of Object.entries(P.cats)) { st.setProperty('--k-' + k, c); st.setProperty('--k-' + k + '-ink', textOnWhite(c)); st.setProperty('--k-' + k + '-on', onColor(c)); }
   const set = { hero: P.hero, 'hero-ink': onColor(P.hero) === '#ffffff' ? '#fff8ef' : INK, 'hero-title': P.heroTitle, 'hero-shadow': P.heroShadow,
     deco1: P.deco[0], deco2: P.deco[1], deco3: P.deco[2], deco4: P.deco[3], badge: P.badge, 'badge-ink': onColor(P.badge),
-    accent: P.accent, 'accent-ink': onColor(P.accent), 'accent-text': textOnWhite(P.accent), head: P.head || textOnWhite(P.hero), frame: P.frame, 'frame-shadow': P.frameShadow, 'frame-ink': onColor(P.frame) };
+    accent: P.accent, 'accent-ink': onColor(P.accent), 'accent-text': textOnWhite(P.accent), head: P.head || textOnWhite(P.hero), frame: P.frame, 'frame-shadow': P.frameShadow, 'frame-ink': onColor(P.frame), fab: P.fab || INK, 'fab-ink': onColor(P.fab || INK), 'fab-ring': P.fabRing || '#ffffff' };
   for (const [k, v] of Object.entries(set)) st.setProperty('--' + k, v);
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = P.hero;
   try { localStorage.setItem('palette', P.id); } catch {}
