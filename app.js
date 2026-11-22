@@ -70,13 +70,15 @@ try { tab = localStorage.getItem('tab') === 'durante' ? 'durante' : 'antes'; } c
 const GCATS = [
   { id: 'alimentacion', label: 'Alimentación', words: ['comida','comer','almuerzo','desayuno','cena','lonche','merienda','postre','helado','cafe','milanesa','chocolate','pizza','hamburguesa','empanada','restaurante','restaurant','menu','bebida','agua','gaseosa','jugo','cerveza','vino','trago','snack','galleta','pan','fruta','supermercado','super','mercado','asado','parrilla','sandwich','sanguche','taco','arepa','choripan','alfajor','dulce','torta','pastel','medialuna','pollo','carne','pescado','ceviche','sushi','pasta','ensalada','sopa','te','mate','yogur','queso','facturas','chipa','tamal','pupusa','brigadeiro','acai','cafeteria','bar de comida'] },
   { id: 'movilidad', label: 'Movilidad', words: ['taxi','uber','cabify','didi','indriver','bus','micro','colectivo','metro','subte','tren','combi','movilidad','transporte','gasolina','nafta','combustible','estacionamiento','parqueo','peaje','bicicleta','bici','remis','tranvia','teleferico','scooter','moto','tarjeta sube','recarga'] },
-  { id: 'pasajes', label: 'Pasajes', words: ['vuelo','avion','pasaje','boleto','aerolinea','equipaje','maleta extra','tasa','aeropuerto','ferry','bus interprovincial','check in'] },
-  { id: 'souvenirs', label: 'Souvenirs y regalos', words: ['souvenir','suvenir','recuerdo','regalo','llavero','iman','polo','camiseta','remera','artesania','peluche','postal','taza','tienda','compra','ropa','perfume','joya','pulsera','collar','gorra','sombrero','libro'] },
+  { id: 'pasajes', label: 'Pasajes', words: ['vuelo','avion','pasaje','boleto','aerolinea','equipaje','maleta extra','aeropuerto','ferry','bus interprovincial','check in'] },
+  { id: 'souvenirs', label: 'Compras y regalos', words: ['maleta','mochila','medicina','farmacia','pastilla','zapatilla','zapato','casaca','abrigo','bloqueador','adaptador','cargador','souvenir','suvenir','recuerdo','regalo','llavero','iman','polo','camiseta','remera','artesania','peluche','postal','taza','tienda','compra','ropa','perfume','joya','pulsera','collar','gorra','sombrero','libro'] },
   { id: 'diversion', label: 'Diversión y paseos', words: ['entrada','museo','tour','paseo','excursion','cine','concierto','parque','discoteca','boliche','fiesta','show','teatro','zoologico','zoo','juego','playa','spa','bar','karaoke','partido','estadio','city tour','guia'] },
-  { id: 'alojamiento', label: 'Alojamiento', words: ['hotel','hostal','hostel','airbnb','hospedaje','alojamiento','posada','noche de hotel','departamento'] },
+  { id: 'alojamiento', label: 'Alojamiento', words: ['hotel','hostal','hostel','airbnb','airbmb','air bnb','airb','hospedaje','alojamiento','posada','noche de hotel','departamento','booking'] },
+  { id: 'tramites', label: 'Trámites y documentos', words: ['pasaporte','visa','tramite','documento','seguro de viaje','seguro','certificado','notaria','migraciones','tasa','vacuna','apostilla','dni','licencia'] },
   { id: 'otros', label: 'Otros', words: [] },
 ];
-const gcatLabel = id => (GCATS.find(c => c.id === id) || GCATS[6]).label;
+const gcatLabel = id => (GCATS.find(c => c.id === id) || GCATS[GCATS.length - 1]).label;
+const partidaOf = t => t.partida || detectCategory(t.title) || 'otros';
 const norm = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 function detectCategory(text) {
   const t = ' ' + norm(text).replace(/[^a-z0-9ñ ]/g, ' ') + ' ';
@@ -131,8 +133,8 @@ function money(t) {
 
 // ---------- mapping between database rows and app objects ----------
 const fromPlan = r => ({ id: r.id, name: r.name, date: r.date || '', rate: r.rate, savedPEN: r.saved_pen, savedUSD: r.saved_usd, createdAt: r.created_at, palette: r.palette || 'noche', pocket: r.pocket || {} });
-const fromTask = r => ({ id: r.id, title: r.title, category: r.category, idealDate: r.ideal_date || '', deadline: r.deadline || '', amount: r.amount ?? '', currency: r.currency, notes: r.notes || '', done: r.done, hasList: !!r.has_list });
-const toTask = t => ({ title: t.title, category: t.category, ideal_date: t.idealDate || null, deadline: t.deadline || null, amount: t.amount === '' || t.amount == null ? null : num(t.amount), currency: t.currency, notes: t.notes || '', done: !!t.done, has_list: !!t.hasList, updated_at: new Date().toISOString() });
+const fromTask = r => ({ id: r.id, title: r.title, category: r.category, idealDate: r.ideal_date || '', deadline: r.deadline || '', amount: r.amount ?? '', currency: r.currency, notes: r.notes || '', done: r.done, hasList: !!r.has_list, partida: r.partida || '' });
+const toTask = t => ({ title: t.title, category: t.category, ideal_date: t.idealDate || null, deadline: t.deadline || null, amount: t.amount === '' || t.amount == null ? null : num(t.amount), currency: t.currency, notes: t.notes || '', done: !!t.done, has_list: !!t.hasList, partida: t.partida || null, updated_at: new Date().toISOString() });
 
 // ---------- dates ----------
 function todayStr() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
@@ -286,7 +288,7 @@ function renderCharts() {
     const need = t.done ? 0 : (m.hasPriced ? Math.max(a - m.spent, 0) : a);
     usd ? needUSD += need : needPEN += need;
     const inPEN = usd ? a * rate : a;
-    byCat[t.category] = (byCat[t.category] || 0) + inPEN;
+    byCat[partidaOf(t)] = (byCat[partidaOf(t)] || 0) + inPEN;
   }
   const sPEN = num(p.savedPEN), sUSD = num(p.savedUSD);
   const rows = [
@@ -312,12 +314,12 @@ function renderCharts() {
       w.append(top, track, note); return w;
     }));
   }
-  const cats = CATS.filter(c => byCat[c.id] > 0).map(c => ({ ...c, v: byCat[c.id] })).sort((a, b) => b.v - a.v);
+  const cats = GCATS.filter(c => byCat[c.id] > 0).map(c => ({ ...c, v: byCat[c.id] })).sort((a, b) => b.v - a.v);
   const host = $('catBars');
   if (!cats.length) { host.replaceChildren(mk('div', { className: 'chart-empty', textContent: 'Aún no hay montos en tus tareas.' })); return; }
   const max = cats[0].v, total = cats.reduce((s, c) => s + c.v, 0);
   host.replaceChildren(...cats.map(c => {
-    const w = mk('div', { className: 'cbar c-' + c.id });
+    const w = mk('div', { className: 'cbar g-' + c.id });
     const top = mk('div', { className: 'cbar-top' });
     top.append(mk('span', { textContent: c.label }), mk('span', { className: 'num', textContent: fmtPEN.format(c.v) + ' · ' + Math.round(c.v / total * 100) + '%' }));
     const bar = mk('div', { className: 'cbar-bar' }); bar.style.width = (c.v / max * 100) + '%';
@@ -581,6 +583,12 @@ function openTask(t) {
     const cur = mk('select', { id: 'f-cur' });
     cur.append(mk('option', { value: 'PEN', textContent: 'Soles (S/)' }), mk('option', { value: 'USD', textContent: 'Dólares (US$)' }));
     cur.value = t.currency || 'PEN';
+    let partida = t.partida || '', partidaManual = !!t.partida;
+    const pOpts = mk('div', { className: 'cats' }); const pHint = mk('small');
+    const drawP = () => pOpts.replaceChildren(...GCATS.map(c => { const b = mk('button', { type: 'button', className: 'chip g-' + c.id, textContent: c.label }); b.setAttribute('aria-pressed', String(c.id === partida)); b.onclick = () => { partida = c.id; partidaManual = true; pHint.textContent = 'Para el gráfico “¿En qué se va el presupuesto?”.'; drawP(); }; return b; }));
+    const autoP = () => { if (partidaManual) return; const d = detectCategory(title.value); partida = d || (title.value.trim() ? 'otros' : ''); pHint.textContent = d ? 'La elegí según el nombre. Toca otra si no es.' : 'Para el gráfico “¿En qué se va el presupuesto?”.'; drawP(); };
+    title.addEventListener('input', autoP); autoP();
+    const pWrap = mk('div', { className: 'field' }); pWrap.append(mk('span', { className: 'label', textContent: 'Partida del presupuesto' }), pOpts, pHint);
     let hasList = !!t.hasList;
     const listOpts = mk('div', { className: 'cats' });
     const listHint = mk('small');
@@ -610,12 +618,12 @@ function openTask(t) {
     right.append(mk('button', { type: 'button', className: 'btn ghost', textContent: 'Cancelar', onclick: closeSheet }), mk('button', { type: 'submit', className: 'btn primary', textContent: 'Guardar' }));
     actions.append(left, right);
 
-    sh.append(h, field('¿Qué hay que hacer?', title), catWrap, listWrap, d1, d2, field('Notas', notes), err, actions);
+    sh.append(h, field('¿Qué hay que hacer?', title), catWrap, listWrap, d1, d2, pWrap, field('Notas', notes), err, actions);
     sh.onsubmit = e => {
       e.preventDefault();
       if (!title.value.trim()) { err.textContent = 'Escribe qué hay que hacer.'; err.hidden = false; return; }
       if (ideal.value && dead.value && ideal.value > dead.value) { err.textContent = 'La fecha ideal debe ser antes (o igual) que la fecha límite.'; err.hidden = false; return; }
-      saveTask({ ...t, title: title.value.trim(), category: cat, idealDate: ideal.value, deadline: dead.value, amount: amount.value ? num(amount.value) : '', currency: cur.value, notes: notes.value.trim(), hasList });
+      saveTask({ ...t, title: title.value.trim(), category: cat, idealDate: ideal.value, deadline: dead.value, amount: amount.value ? num(amount.value) : '', currency: cur.value, notes: notes.value.trim(), hasList, partida: partida || 'otros' });
       closeSheet();
     };
   });
