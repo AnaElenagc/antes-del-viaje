@@ -160,13 +160,63 @@ function renderList() {
   }));
 }
 
+function renderCharts() {
+  const p = plan() || {}, rate = num(p.rate);
+  let needPEN = 0, needUSD = 0;
+  const byCat = {};
+  for (const t of tasks) {
+    const a = num(t.amount); if (!a) continue;
+    const usd = t.currency === 'USD';
+    if (!t.done) usd ? needUSD += a : needPEN += a;
+    const inPEN = usd ? a * rate : a;
+    byCat[t.category] = (byCat[t.category] || 0) + inPEN;
+  }
+  const sPEN = num(p.savedPEN), sUSD = num(p.savedUSD);
+  const rows = [
+    { label: 'Soles', saved: sPEN, need: needPEN, f: fmtPEN, cls: 'save' },
+    { label: 'Dólares', saved: sUSD, need: needUSD, f: fmtUSD, cls: 'save' },
+  ];
+  if (rate > 0) rows.push({ label: 'Todo junto (en soles)', saved: sPEN + sUSD * rate, need: needPEN + needUSD * rate, f: fmtPEN, cls: 'total' });
+  const goal = $('goalBars');
+  if (!needPEN && !needUSD && !sPEN && !sUSD) {
+    goal.replaceChildren(mk('div', { className: 'chart-empty', textContent: 'Pon montos en tus tareas y lo que tienes ahorrado para ver cuánto te falta.' }));
+  } else {
+    goal.replaceChildren(...rows.filter(r => r.need || r.saved).map(r => {
+      const pct = r.need > 0 ? Math.min(r.saved / r.need, 1) : 1;
+      const w = mk('div', { className: 'goal' });
+      const top = mk('div', { className: 'goal-top' });
+      top.append(mk('b', { textContent: r.label }), mk('span', { className: 'num', textContent: r.f.format(r.saved) + ' de ' + r.f.format(r.need) }));
+      const track = mk('div', { className: 'track ' + r.cls });
+      const fill = mk('i'); fill.style.width = (pct * 100) + '%'; track.append(fill);
+      track.title = r.label + ': tienes ' + r.f.format(r.saved) + ' de ' + r.f.format(r.need);
+      const left = r.need - r.saved;
+      const note = mk('div', { className: 'pct num' + (left <= 0 ? ' done' : '') });
+      note.textContent = left <= 0 ? '¡Meta cubierta! ✓' : Math.round(pct * 100) + '% · te falta ' + r.f.format(left);
+      w.append(top, track, note); return w;
+    }));
+  }
+  const cats = CATS.filter(c => byCat[c.id] > 0).map(c => ({ ...c, v: byCat[c.id] })).sort((a, b) => b.v - a.v);
+  const host = $('catBars');
+  if (!cats.length) { host.replaceChildren(mk('div', { className: 'chart-empty', textContent: 'Aún no hay montos en tus tareas.' })); return; }
+  const max = cats[0].v, total = cats.reduce((s, c) => s + c.v, 0);
+  host.replaceChildren(...cats.map(c => {
+    const w = mk('div', { className: 'cbar c-' + c.id });
+    const top = mk('div', { className: 'cbar-top' });
+    top.append(mk('span', { textContent: c.label }), mk('span', { className: 'num', textContent: fmtPEN.format(c.v) + ' · ' + Math.round(c.v / total * 100) + '%' }));
+    const bar = mk('div', { className: 'cbar-bar' }); bar.style.width = (c.v / max * 100) + '%';
+    bar.title = c.label + ': ' + fmtPEN.format(c.v);
+    w.append(top, bar); return w;
+  }));
+  if (!rate && Object.keys(byCat).length) host.append(mk('div', { className: 'chart-empty', textContent: 'Pon el tipo de cambio para sumar también los montos en dólares.' }));
+}
+
 function renderProgress() {
   const done = tasks.filter(t => t.done).length;
   $('prog').style.width = tasks.length ? (done / tasks.length * 100) + '%' : '0';
   $('progTxt').textContent = tasks.length ? done + ' de ' + tasks.length + ' tareas listas' : '';
 }
 
-function render() { renderPlans(); renderHeader(); renderBudget(); renderAlerts(); renderProgress(); renderList(); $('addBtn').hidden = !plan(); $('editPlanBtn').hidden = !plan(); }
+function render() { renderPlans(); renderHeader(); renderBudget(); renderCharts(); renderAlerts(); renderProgress(); renderList(); $('addBtn').hidden = !plan(); $('addBtn2').hidden = !plan(); $('editPlanBtn').hidden = !plan(); }
 
 // ---------- toast & notice ----------
 let toastT;
@@ -307,7 +357,7 @@ const pendingPlan = {}; let planTimer;
 function patchPlan(fields) {
   if (!planId) return;
   Object.assign(pendingPlan, fields);
-  const p = plan(); if (p) Object.assign(p, fields); renderBudget();
+  const p = plan(); if (p) Object.assign(p, fields); renderBudget(); renderCharts();
   clearTimeout(planTimer);
   planTimer = setTimeout(async () => {
     const f = { ...pendingPlan }; for (const k in pendingPlan) delete pendingPlan[k];
@@ -356,6 +406,7 @@ $('planSel').onchange = e => selectPlan(e.target.value);
 $('newPlanBtn').onclick = () => openPlan(null);
 $('editPlanBtn').onclick = () => plan() && openPlan(plan());
 $('addBtn').onclick = () => openTask(null);
+$('addBtn2').onclick = () => openTask(null);
 $('savedPEN').oninput = e => patchPlan({ savedPEN: num(e.target.value) });
 $('savedUSD').oninput = e => patchPlan({ savedUSD: num(e.target.value) });
 $('rate').oninput = e => patchPlan({ rate: num(e.target.value) });
@@ -374,7 +425,7 @@ $('loginForm').onsubmit = async e => {
 
 function showApp(signedIn) {
   $('login').hidden = signedIn; $('app').hidden = !signedIn;
-  if (!signedIn) $('addBtn').hidden = true;
+  if (!signedIn) { $('addBtn').hidden = true; $('addBtn2').hidden = true; }
 }
 
 try { filter = localStorage.getItem('filter') || 'pend'; } catch {}

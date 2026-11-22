@@ -16,38 +16,26 @@
 <style>
 /* Layout: one mobile column (max 640px) — eclectic "poster" header, framed budget card, alerts, task list with a color per category, sheet for editing. */
 :root {
-  --bg: #fde6da;            /* peach wall */
-  --surface: #fffaf4;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --tint: #fbf5f1;          /* warm off-white for inputs and tracks */
   --ink: #1c2142;
-  --muted: #6b5d63;
-  --line: #ecd3c6;
+  --muted: #64596a;
+  --line: #ece2dc;
   --accent: #e0442a;        /* tomato */
   --accent-soft: #fde0d8;
-  --cobalt: #2348b8; --tomato: #e0442a; --emerald: #18864a; --mustard: #f2b129; --pink: #e9609a; --violet: #7b4bc4; --sun: #f4ef4a;
+  --cobalt: #2348b8; --tomato: #e0442a; --emerald: #18864a; --mustard: #c98a00; --pink: #e9609a; --violet: #7b4bc4; --sun: #f4ef4a; --badge: #f2b129;
   --tomato-ink: #c2341c; --pink-ink: #c23a77; --mustard-ink: #9a6400;
   --on-poster: #fff8ef;
   --ok: #1d7a4f; --ok-soft: #dff2e6;
   --warn: #9a5b00; --warn-soft: #fdefcf;
   --bad: #b3261e; --bad-soft: #fde0dc;
-  --shadow: 0 1px 2px rgba(60,30,20,.06), 0 4px 16px rgba(60,30,20,.07);
+  --shadow: 0 1px 2px rgba(60,30,20,.05), 0 6px 20px rgba(60,30,20,.06);
   --fun: "Shrikhand", "Bricolage Grotesque", Georgia, serif;
   --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #151a33; --surface: #1f2547; --ink: #fbefe6; --muted: #b6abba; --line: #343c66;
-  --accent: #ff7a5c; --accent-soft: #40231f;
-  --cobalt: #3a63d8; --tomato: #ff7a5c; --emerald: #4cc785; --mustard: #f7c14a; --pink: #ff8ab8; --violet: #a585f0;
-  --tomato-ink: #ff7a5c; --pink-ink: #ff8ab8; --mustard-ink: #f7c14a;
-  --ok: #5cc795; --ok-soft: #173326; --warn: #f0b45a; --warn-soft: #3a2c14; --bad: #ff8a80; --bad-soft: #3d1b19;
-  --shadow: none; color-scheme: dark } }
-:root[data-theme="dark"] {
-  --bg: #151a33; --surface: #1f2547; --ink: #fbefe6; --muted: #b6abba; --line: #343c66;
-  --accent: #ff7a5c; --accent-soft: #40231f;
-  --cobalt: #3a63d8; --tomato: #ff7a5c; --emerald: #4cc785; --mustard: #f7c14a; --pink: #ff8ab8; --violet: #a585f0;
-  --tomato-ink: #ff7a5c; --pink-ink: #ff8ab8; --mustard-ink: #f7c14a;
-  --ok: #5cc795; --ok-soft: #173326; --warn: #f0b45a; --warn-soft: #3a2c14; --bad: #ff8a80; --bad-soft: #3d1b19;
-  --shadow: none; color-scheme: dark }
 .c-tramite { --c: var(--cobalt); --ci: var(--cobalt) }
 .c-compra { --c: var(--tomato); --ci: var(--tomato-ink) }
 .c-reserva { --c: var(--emerald); --ci: var(--emerald) }
@@ -58,7 +46,21 @@
 * { box-sizing: border-box }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px 110px }
-.wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 14px }
+.wrap { max-width: 1200px; margin: 0 auto; display: grid; gap: 14px }
+.cols { display: grid; gap: 14px }
+.main, .side { display: grid; gap: 14px; align-content: start; min-width: 0 }
+@media (min-width: 960px) {
+  .wrap { gap: 18px }
+  .cols { grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; align-items: start }
+  .side { position: sticky; top: 16px }
+}
+.add-inline { display: none; justify-self: start }
+@media (min-width: 960px) { .fab { display: none } .add-inline { display: inline-block } }
+@media (max-width: 959px) {
+  .cols { display: flex; flex-direction: column }
+  .side { display: contents }
+  .budget { order: 0 } .main { order: 1 } .charts { order: 2 } .tools { order: 3 }
+}
 h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0 }
 button, input, select, textarea { font: inherit; color: inherit }
 button { cursor: pointer }
@@ -81,7 +83,7 @@ button { cursor: pointer }
     radial-gradient(circle at 16% 22%, var(--sun) 0 4px, transparent 5px) }
 .hero h1 { font-family: var(--fun); font-weight: 400; color: var(--sun); font-size: clamp(30px, 8vw, 44px); line-height: 1.1; text-shadow: 3px 3px 0 var(--tomato); overflow-wrap: anywhere; min-width: 0 }
 .hero .sub { grid-column: 1; font-weight: 500; opacity: .92 }
-.count { grid-row: 1 / span 2; grid-column: 2; width: 96px; height: 96px; border-radius: 50%; background: var(--mustard); color: #1c2142;
+.count { grid-row: 1 / span 2; grid-column: 2; width: 96px; height: 96px; border-radius: 50%; background: var(--badge); color: #1c2142;
   display: grid; place-content: center; text-align: center; transform: rotate(-8deg); box-shadow: 4px 4px 0 var(--tomato) }
 .count b { display: block; font-family: var(--display); font-size: 40px; line-height: .9; font-weight: 800 }
 .count span { font-size: 11px; font-weight: 600; max-width: 80px }
@@ -92,19 +94,40 @@ button { cursor: pointer }
 
 /* Budget */
 .card { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--line); padding: 16px }
-.budget { border: 3px solid var(--mustard); box-shadow: 6px 6px 0 var(--emerald); margin-right: 6px }
+.budget { border: 3px solid var(--badge); box-shadow: 6px 6px 0 var(--emerald); margin-right: 6px }
 .budget h2 { font-family: var(--fun); font-weight: 400; font-size: 22px; margin-bottom: 12px; color: var(--cobalt) }
 .btable { display: grid; grid-template-columns: 1fr auto auto; gap: 8px 16px; align-items: center }
 .btable .h { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); text-align: right; font-weight: 600 }
 .btable .r { text-align: right }
 .btable .row-l { color: var(--muted) }
-.btable input { width: 100px; text-align: right; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 5px 8px }
+.btable input { width: 100px; text-align: right; border: 1px solid var(--line); background: var(--tint); border-radius: 8px; padding: 5px 8px }
 .btable .falta { font-weight: 700; font-size: 17px }
 .btable .sep { grid-column: 1 / -1; height: 1px; background: var(--line) }
 .falta.bad { color: var(--bad) } .falta.good { color: var(--ok) }
 .combined { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center }
-.combined input { width: 64px; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 3px 6px; text-align: right }
+.combined input { width: 64px; border: 1px solid var(--line); background: var(--tint); border-radius: 8px; padding: 3px 6px; text-align: right }
 .combined strong { color: var(--ink) }
+
+
+/* Charts */
+.charts h2 { font-family: var(--fun); font-weight: 400; font-size: 20px; color: var(--cobalt); margin-bottom: 4px }
+.charts h3 { font-family: var(--display); font-size: 15px; margin: 18px 0 8px }
+.charts .hint { color: var(--muted); font-size: 13px; margin: 0 0 12px }
+.goal { display: grid; gap: 6px; margin-bottom: 14px }
+.goal-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; flex-wrap: wrap }
+.goal-top b { font-weight: 600 }
+.goal-top span { color: var(--muted) }
+.track { height: 14px; background: var(--tint); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; position: relative }
+.track i { position: absolute; inset: 0 auto 0 0; border-radius: 0 4px 4px 0; transition: width .4s }
+.track.save i { background: var(--emerald) }
+.track.total i { background: var(--cobalt) }
+.goal .pct { font-size: 12.5px; color: var(--muted) }
+.goal .pct.done { color: var(--ok); font-weight: 600 }
+.cbar { display: grid; gap: 4px; margin-bottom: 10px }
+.cbar-top { display: flex; justify-content: space-between; font-size: 13.5px; gap: 8px }
+.cbar-top span:first-child::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 3px; background: var(--c); margin-right: 7px }
+.cbar-bar { height: 10px; border-radius: 0 4px 4px 0; background: var(--c); min-width: 3px }
+.chart-empty { color: var(--muted); font-size: 13.5px; padding: 10px 0 }
 
 /* Alerts */
 .alerts { display: grid; gap: 8px }
@@ -138,8 +161,6 @@ button { cursor: pointer }
 .notice { padding: 12px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: 14px }
 
 .fab { position: fixed; right: max(16px, calc(env(safe-area-inset-right, 0px) + 16px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); background: var(--accent); color: #fff; border: 0; border-radius: 99px; padding: 14px 22px; font-weight: 600; box-shadow: 4px 4px 0 var(--cobalt); font-size: 15px }
-:root[data-theme="dark"] .fab { color: #1a0a0e }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fab { color: #1a0a0e } }
 .tools { display: flex; gap: 8px; flex-wrap: wrap }
 .tools .iconbtn { flex: 1; min-width: 140px; padding: 10px }
 
@@ -149,7 +170,7 @@ button { cursor: pointer }
 @media (min-width: 600px) { .overlay { align-items: center } .sheet { border-radius: 20px } }
 .sheet h2 { font-family: var(--fun); font-weight: 400; font-size: 24px; color: var(--cobalt) }
 .field { display: grid; gap: 4px }
-.field input, .field select, .field textarea { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px; width: 100%; min-width: 0 }
+.field input, .field select, .field textarea { border: 1px solid var(--line); background: var(--tint); border-radius: 10px; padding: 10px; width: 100%; min-width: 0 }
 .field small { color: var(--muted); font-size: 12px }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
 .two > * { min-width: 0 }
@@ -157,8 +178,6 @@ button { cursor: pointer }
 .actions { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; margin-top: 4px }
 .btn { border: 0; border-radius: 10px; padding: 11px 18px; font-weight: 600 }
 .btn.primary { background: var(--accent); color: #fff }
-:root[data-theme="dark"] .btn.primary { color: #1a0a0e }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #1a0a0e } }
 .btn.ghost { background: transparent; border: 1px solid var(--line) }
 .btn.danger { background: transparent; color: var(--bad) }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 84px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 30; max-width: calc(100% - 32px) }
@@ -208,6 +227,13 @@ html { color-scheme: light } body { margin: 0 }
   <div id="notice" class="notice" hidden></div>
   <div class="alerts" id="alerts"></div>
 
+  <div class="cols">
+    <main class="main">
+      <button class="btn primary add-inline" id="addBtn2" type="button" hidden>+ Agregar tarea</button>
+      <div class="filters" id="filters"></div>
+      <div class="list" id="list"></div>
+    </main>
+    <aside class="side">
   <section class="card budget">
     <h2>Presupuesto</h2>
     <div class="btable num">
@@ -226,11 +252,17 @@ html { color-scheme: light } body { margin: 0 }
     </div>
   </section>
 
-  <div class="filters" id="filters"></div>
-  <div class="list" id="list"></div>
-
+  <section class="card charts" aria-labelledby="chartsTitle">
+    <h2 id="chartsTitle">Tu meta</h2>
+    <p class="hint">Lo que tienes ahorrado frente a lo que todavía necesitas pagar.</p>
+    <div id="goalBars"></div>
+    <h3>¿En qué se va el presupuesto?</h3>
+    <div id="catBars"></div>
+  </section>
   <div class="tools">
     <button class="iconbtn" id="icsBtn" type="button">Descargar todo para el calendario (.ics)</button>
+  </div>
+    </aside>
   </div>
 </div>
 
